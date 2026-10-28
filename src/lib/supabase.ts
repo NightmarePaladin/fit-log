@@ -4,7 +4,9 @@ import { createClient } from '@supabase/supabase-js';
 import { LargeSecureStore } from './secureStorage';
 
 const url = process.env.EXPO_PUBLIC_SUPABASE_URL;
-const anonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+// Accept either name: `eas integrations:supabase:connect` writes ..._PUBLISHABLE_KEY, older setup used ..._ANON_KEY.
+// Both are the public client key (safe in the app); Row Level Security protects the data.
+const anonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
 export const isSupabaseConfigured = Boolean(url && anonKey);
 
