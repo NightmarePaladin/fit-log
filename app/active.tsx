@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, TextInput, View } from 'react-native';
 import { Redirect, useRouter } from 'expo-router';
 import { Button, IconButton, Text } from 'react-native-paper';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { showDialog } from '../src/lib/dialog';
 import { saveWorkout } from '../src/api/workouts';
@@ -32,6 +32,7 @@ export default function ActiveWorkout() {
   const { draft } = store;
   const { workouts } = useWorkouts();
   const u = useUnits();
+  const { bottom } = useSafeAreaInsets(); // keeps the save bar above Android's gesture/nav bar
   const [picker, setPicker] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -118,7 +119,7 @@ export default function ActiveWorkout() {
         <Button textColor={colors.danger} onPress={discard}>Discard</Button>
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 160 }} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 160 + bottom }} keyboardShouldPersistTaps="handled">
         {draft.exercises.length === 0 && (
           <Card style={{ alignItems: 'center', gap: 12 }}>
             <MaterialCommunityIcons name="dumbbell" size={40} color={colors.accent} />
@@ -147,7 +148,7 @@ export default function ActiveWorkout() {
 
       <View
         style={{
-          position: 'absolute', left: 0, right: 0, bottom: 0, padding: 16, gap: 8,
+          position: 'absolute', left: 0, right: 0, bottom: 0, padding: 16, paddingBottom: 16 + bottom, gap: 8,
           backgroundColor: colors.bg, borderTopWidth: 1, borderTopColor: colors.border,
         }}
       >

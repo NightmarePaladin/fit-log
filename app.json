@@ -23,10 +23,17 @@
       "output": "single"
     },
     "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#14151A",
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 220
+        }
+      ],
       "expo-router",
       "expo-secure-store",
-      "expo-web-browser",
-      "expo-sqlite"
+      "expo-web-browser"
     ],
     "extra": {
       "router": {
