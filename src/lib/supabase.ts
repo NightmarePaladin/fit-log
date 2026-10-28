@@ -13,11 +13,15 @@ export const isSupabaseConfigured = Boolean(url && anonKey);
 const isWeb = Platform.OS === 'web';
 const isServerRender = isWeb && typeof window === 'undefined';
 
+// Native: AES-encrypted session with the key in Android Keystore.
+// Web: the browser's localStorage (SecureStore does not exist there).
+export const authStorage = isWeb ? (isServerRender ? undefined : window.localStorage) : new LargeSecureStore();
+/** Where supabase-js keeps the session (same formula it uses internally). Lets us restore a saved session offline. */
+export const authStorageKey = `sb-${new URL(url ?? 'http://localhost').hostname.split('.')[0]}-auth-token`;
+
 export const supabase = createClient(url ?? 'http://localhost', anonKey ?? 'missing-key', {
   auth: {
-    // Native: AES-encrypted session with the key in Android Keystore.
-    // Web: the browser's localStorage (SecureStore does not exist there).
-    storage: isWeb ? (isServerRender ? undefined : window.localStorage) : new LargeSecureStore(),
+    storage: authStorage,
     autoRefreshToken: true,
     persistSession: !isServerRender,
     // On web the OAuth redirect comes back to the page URL with ?code=...

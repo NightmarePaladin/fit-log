@@ -3,6 +3,7 @@ import { Pressable, RefreshControl, ScrollView, SectionList, View } from 'react-
 import { useRouter } from 'expo-router';
 import { ActivityIndicator, Chip, Text } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBanner } from '../../src/components/StatusBanner';
 import { Card, Empty, ErrorBanner } from '../../src/components/ui';
 import { useWorkouts } from '../../src/hooks/useWorkouts';
 import { formatDay } from '../../src/lib/dates';
@@ -37,6 +38,9 @@ export default function History() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
       <Text style={{ fontSize: 30, fontWeight: '800', paddingHorizontal: 16, paddingTop: 8 }}>History</Text>
+      <View style={{ paddingHorizontal: 16, paddingTop: 8 }}>
+        <StatusBanner />
+      </View>
       <View style={{ height: 56 }}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ padding: 12, gap: 8 }}>
           <Chip selected={filter === null} onPress={() => setFilter(null)}>All</Chip>
@@ -79,6 +83,7 @@ export default function History() {
                 )}
                 <Text style={{ color: colors.accent, fontWeight: '700' }}>
                   {t.sets} sets · {u.vol(t.volume)} {u.label}
+                  {w.pending ? <Text style={{ color: colors.gold }}>  ·  Not uploaded</Text> : null}
                 </Text>
               </Card>
             </Pressable>

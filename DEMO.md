@@ -27,6 +27,8 @@ Covers the 10 Definition-of-Done steps in order. Present from the Android phone;
 | 9 | **Compare weeks** | Progress tab. **Barbell Squat**: last week 225×10 → this week 235×10 = +10 lb, **+4.4%**. **Bench**: 155×8 → 160×6 shows **Not comparable**. Show the line chart and PRs. | "Volume is weight × reps over completed sets. I only report a strength percentage when reps are the same. A heavier weight at fewer reps is not the same thing, so the app says so instead of faking a number." |
 | 10 | **Sign out and in** | Settings (gear) → *Sign out*, then sign in again. History is still there. | "Data lives in Postgres, not on the phone." |
 
+**Bonus: offline (great for the "gyms have bad signal" story).** Turn on airplane mode, finish a workout, and show the blue **Saved on this phone** banner and the **Not uploaded** tag in History. Turn airplane mode off: it uploads by itself and the tag disappears. For the no-account version: sign out, tap **Access while offline**, log a workout, then sign in and show the **Upload your offline workouts?** prompt.
+
 Optional extras if time allows: Settings → switch to **kg** (all screens convert; saved data is unchanged); Account page → edit your name.
 
 ## If something goes wrong
@@ -38,8 +40,8 @@ Optional extras if time allows: Settings → switch to **kg** (all screens conve
 ## Likely questions
 - **How is data kept private?** Row Level Security on every table; child tables check ownership through the parent workout. Tested with two users: neither could read or change the other's data.
 - **Why store weights in pounds when kg exists?** One canonical unit. The app converts for display and input, so switching units never corrupts history.
-- **What about offline?** Drafts survive restarts locally, but saving needs a connection. No offline queue in this version.
-- **What's not built?** Rest timer, plate calculator, social features, and Google Play release (the APK is installed directly).
+- **What about offline?** Signed-in users keep working with no signal: workouts save on the phone and upload automatically later. There is also an **Access while offline** mode with no account, and the app asks before uploading those workouts when you sign in. Each workout has a phone-generated id, so a retry can never duplicate it.
+- **What's not built?** Rest timer, plate calculator, social features, and a Google Play release (the APK is installed directly).
 
 ## Honest limits to be upfront about
 - Android was tested on a real phone only for the flows in this checklist; iOS was not built.

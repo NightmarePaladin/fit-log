@@ -3,6 +3,7 @@ import { RefreshControl, ScrollView, View, useWindowDimensions } from 'react-nat
 import { ActivityIndicator, Chip, Text } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LineChart } from 'react-native-gifted-charts';
+import { StatusBanner } from '../../src/components/StatusBanner';
 import { Card, Empty, ErrorBanner, SectionTitle } from '../../src/components/ui';
 import { useUnits } from '../../src/hooks/useUnits';
 import { useWorkouts } from '../../src/hooks/useWorkouts';
@@ -94,6 +95,9 @@ export default function Progress() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
       <Text style={{ fontSize: 30, fontWeight: '800', paddingHorizontal: 16, paddingTop: 8 }}>Progress</Text>
+      <View style={{ paddingHorizontal: 16, paddingTop: 8 }}>
+        <StatusBanner />
+      </View>
       <View style={{ height: 56 }}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ padding: 12, gap: 8 }}>
           <Chip selected={effective === null} onPress={() => setSelected(null)}>All exercises</Chip>

@@ -7,12 +7,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../src/auth/AuthProvider';
 import { Card, SectionTitle } from '../src/components/ui';
 import { showDialog } from '../src/lib/dialog';
+import { visibleTo } from '../src/lib/localData';
 import { useDraftStore } from '../src/store/draft';
+import { GUEST, useLocalStore } from '../src/store/local';
 import { colors } from '../src/theme';
 
 export default function Settings() {
   const router = useRouter();
-  const { session, signOut, unit, setUnit } = useAuth();
+  const { session, isGuest, exitOfflineMode, signOut, unit, setUnit } = useAuth();
+  const waiting = useLocalStore((s) => visibleTo(s.workouts, session?.user.id ?? null).length);
   const [unitBusy, setUnitBusy] = useState(false);
   const [unitError, setUnitError] = useState<string | null>(null);
 
@@ -29,7 +32,7 @@ export default function Settings() {
     }
   };
   const draft = useDraftStore((s) => s.draft);
-  const ownsDraft = useDraftStore((s) => s.ownerId === session?.user.id);
+  const ownsDraft = useDraftStore((s) => s.ownerId === (session?.user.id ?? GUEST));
   const [signingOut, setSigningOut] = useState(false);
   const back = () => (router.canGoBack() ? router.back() : router.replace('/'));
 
@@ -47,6 +50,18 @@ export default function Settings() {
       setSigningOut(false);
     }
   };
+
+  const confirmSignOut = () =>
+    waiting > 0
+      ? showDialog(
+          'Sign out with workouts waiting?',
+          `${waiting} workout${waiting === 1 ? ' is' : 's are'} saved on this phone and not uploaded yet. They stay on this phone and upload when you sign in again.`,
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Sign out', style: 'destructive', onPress: doSignOut },
+          ],
+        )
+      : doSignOut();
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
@@ -84,13 +99,23 @@ export default function Settings() {
 
         <SectionTitle>Account</SectionTitle>
         <Card style={{ paddingVertical: 4 }}>
-          <List.Item
-            title="Account & profile"
-            description="Name, email, delete account"
-            left={(p) => <List.Icon {...p} icon="account-circle" />}
-            right={(p) => <List.Icon {...p} icon="chevron-right" />}
-            onPress={() => router.push('/account')}
-          />
+          {isGuest ? (
+            <List.Item
+              title="Sign in to upload"
+              description="You are in offline mode. Sign in to save workouts to an account."
+              left={(p) => <List.Icon {...p} icon="login" />}
+              right={(p) => <List.Icon {...p} icon="chevron-right" />}
+              onPress={exitOfflineMode}
+            />
+          ) : (
+            <List.Item
+              title="Account & profile"
+              description="Name, email, delete account"
+              left={(p) => <List.Icon {...p} icon="account-circle" />}
+              right={(p) => <List.Icon {...p} icon="chevron-right" />}
+              onPress={() => router.push('/account')}
+            />
+          )}
         </Card>
 
         <SectionTitle>Data on this device</SectionTitle>
@@ -100,15 +125,26 @@ export default function Settings() {
               ? `You have an unfinished workout with ${draft.exercises.length} exercise${draft.exercises.length === 1 ? '' : 's'} saved locally.`
               : 'No unfinished workout is stored on this device.'}
           </Text>
+          <Text style={{ color: colors.muted }}>
+            {waiting > 0
+              ? `${waiting} finished workout${waiting === 1 ? '' : 's'} saved on this phone and waiting to upload.`
+              : 'All finished workouts are uploaded.'}
+          </Text>
           <Button icon="delete-sweep" disabled={!draft || !ownsDraft} onPress={clearDraft}>
             Discard unfinished workout
           </Button>
         </Card>
 
         <SectionTitle>Session</SectionTitle>
-        <Button mode="outlined" icon="logout" loading={signingOut} disabled={signingOut} onPress={doSignOut}>
-          Sign out
-        </Button>
+        {isGuest ? (
+          <Button mode="outlined" icon="login" onPress={exitOfflineMode}>
+            Sign in
+          </Button>
+        ) : (
+          <Button mode="outlined" icon="logout" loading={signingOut} disabled={signingOut} onPress={confirmSignOut}>
+            Sign out
+          </Button>
+        )}
 
         <Text style={{ color: colors.muted, textAlign: 'center', marginTop: 12, fontSize: 12 }}>
           FitLog v{Constants.expoConfig?.version ?? '1.0.0'}

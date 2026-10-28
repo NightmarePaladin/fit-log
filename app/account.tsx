@@ -10,7 +10,7 @@ import { colors } from '../src/theme';
 
 export default function Account() {
   const router = useRouter();
-  const { session, fullName, avatarUrl, updateProfile, deleteAccount, recovery, updatePassword } = useAuth();
+  const { session, exitOfflineMode, fullName, avatarUrl, updateProfile, deleteAccount, recovery, updatePassword } = useAuth();
   const [name, setName] = useState(fullName);
 
   // Password section: only for email/password accounts (Google accounts have no password here).
@@ -75,6 +75,20 @@ export default function Account() {
       setDeleting(false);
     }
   };
+
+  // Offline mode has no account to manage.
+  if (!session) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg, padding: 24, justifyContent: 'center', gap: 12 }}>
+        <Text variant="titleLarge" style={{ fontWeight: '800' }}>Not signed in</Text>
+        <Text style={{ color: colors.muted }}>
+          You are using FitLog offline without an account. Sign in to manage your profile and upload your workouts.
+        </Text>
+        <Button mode="contained" onPress={exitOfflineMode}>Sign in</Button>
+        <Button onPress={back}>Back</Button>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>

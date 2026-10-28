@@ -11,7 +11,10 @@ import { Card, ErrorBanner } from '../../src/components/ui';
 import { formatDay } from '../../src/lib/dates';
 import { useUnits } from '../../src/hooks/useUnits';
 import { workoutToDraftExercises, workoutTotals } from '../../src/lib/history';
+import { localToRow } from '../../src/lib/localData';
+import { isNetworkError } from '../../src/lib/net';
 import { useDraftStore } from '../../src/store/draft';
+import { GUEST, useLocalStore } from '../../src/store/local';
 import { colors } from '../../src/theme';
 import type { WorkoutRow } from '../../src/types';
 
@@ -20,6 +23,7 @@ export default function WorkoutDetail() {
   const router = useRouter();
   const { session } = useAuth();
   const u = useUnits();
+  const userIdOrNull = session?.user.id ?? null;
   const [w, setW] = useState<WorkoutRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -27,16 +31,32 @@ export default function WorkoutDetail() {
   const load = useCallback(async () => {
     try {
       setError(null);
+      // A workout saved on this phone (not uploaded yet) takes priority over the server copy.
+      const local = useLocalStore.getState().workouts.find((x) => x.id === id);
+      if (local) {
+        setW(localToRow(local));
+        return;
+      }
       setW(await fetchWorkout(id));
     } catch (e) {
+      if (isNetworkError(e)) {
+        // Offline: show the last cached copy if we have one.
+        const cached = (userIdOrNull ? useLocalStore.getState().cache[userIdOrNull]?.workouts : undefined)?.find((x) => x.id === id);
+        if (cached) {
+          setW(cached);
+          return;
+        }
+        setError('You are offline and this workout is not saved on this phone.');
+        return;
+      }
       setError(e instanceof Error ? e.message : 'Could not load workout');
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, userIdOrNull]);
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
-  const userId = session?.user.id ?? '';
+  const userId = session?.user.id ?? GUEST;
   const closeToTabs = () => (router.canGoBack() ? router.back() : router.replace('/'));
 
   const withDraftGuard = (fn: () => void) => {
@@ -75,10 +95,16 @@ export default function WorkoutDetail() {
         style: 'destructive',
         onPress: async () => {
           try {
-            await deleteWorkout(id);
+            // Signed in: remove the server copy first (a never-uploaded workout simply has nothing to remove there).
+            if (session) await deleteWorkout(id);
+            useLocalStore.getState().removeWorkout(id);
             closeToTabs();
           } catch (e) {
-            setError(e instanceof Error ? e.message : 'Could not delete workout');
+            setError(
+              isNetworkError(e)
+                ? 'Deleting needs an internet connection. Try again when you are online.'
+                : e instanceof Error ? e.message : 'Could not delete workout',
+            );
           }
         },
       },
@@ -93,6 +119,22 @@ export default function WorkoutDetail() {
         <Text variant="titleLarge" style={{ flex: 1, fontWeight: '800' }}>{w?.name ?? 'Workout'}</Text>
       </View>
       <ScrollView contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 40 }}>
+        {saved === 'queued' && (
+          <View
+            style={{
+              flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14, borderRadius: 16,
+              backgroundColor: 'rgba(76,141,255,0.15)', borderWidth: 1, borderColor: colors.blue,
+            }}
+          >
+            <MaterialCommunityIcons name="content-save-check" size={24} color={colors.blue} />
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: colors.blue, fontWeight: '800', fontSize: 16 }}>Saved on this phone</Text>
+              <Text style={{ color: colors.muted, fontSize: 12 }}>
+                {session ? 'It will upload automatically when you are back online.' : 'Sign in later to upload it to your account.'}
+              </Text>
+            </View>
+          </View>
+        )}
         {saved === '1' && (
           <View
             style={{
@@ -110,7 +152,10 @@ export default function WorkoutDetail() {
 
         {w && totals && (
           <>
-            <Text style={{ color: colors.muted }}>{formatDay(w.completed_at!)}</Text>
+            <Text style={{ color: colors.muted }}>
+              {formatDay(w.completed_at!)}
+              {w.pending ? '  ·  Not uploaded yet' : ''}
+            </Text>
             <Card style={{ flexDirection: 'row', justifyContent: 'space-around' }}>
               <View style={{ alignItems: 'center' }}>
                 <Text style={{ fontSize: 30, fontWeight: '800' }}>{totals.sets}</Text>

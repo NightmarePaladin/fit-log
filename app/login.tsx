@@ -10,7 +10,9 @@ import { colors } from '../src/theme';
 type Mode = 'signin' | 'signup';
 
 export default function Login() {
-  const { signInWithGoogle, signInWithPassword, signUpWithPassword, resendConfirmation, sendPasswordReset } = useAuth();
+  const {
+    signInWithGoogle, signInWithPassword, signUpWithPassword, resendConfirmation, sendPasswordReset, enterOfflineMode,
+  } = useAuth();
   const [mode, setMode] = useState<Mode>('signin');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -237,8 +239,20 @@ export default function Login() {
           >
             Continue with Google
           </Button>
-          <Text style={{ color: colors.muted, textAlign: 'center', fontSize: 12, marginTop: 14 }}>
-            Your workouts are private to your account.
+          <Button
+            icon="cloud-off-outline"
+            onPress={enterOfflineMode}
+            disabled={busy !== null}
+            style={{ marginTop: 6 }}
+            labelStyle={{ fontSize: 15 }}
+          >
+            Access while offline
+          </Button>
+          <Text style={{ color: colors.muted, textAlign: 'center', fontSize: 12, marginTop: 4 }}>
+            No signal at the gym? Log workouts on this phone without an account. You can upload them when you sign in.
+          </Text>
+          <Text style={{ color: colors.muted, textAlign: 'center', fontSize: 12, marginTop: 10 }}>
+            Workouts in an account are private to that account.
           </Text>
         </ScrollView>
       </KeyboardAvoidingView>

@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { ActivityIndicator, Button, IconButton, Text } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../src/auth/AuthProvider';
+import { StatusBanner } from '../../src/components/StatusBanner';
 import { Card, Empty, ErrorBanner, SectionTitle, Stat } from '../../src/components/ui';
 import { useUnits } from '../../src/hooks/useUnits';
 import { useWorkouts } from '../../src/hooks/useWorkouts';
@@ -11,16 +12,17 @@ import { formatDay, weekKey } from '../../src/lib/dates';
 import { exerciseNames, flattenWorkouts, workoutTotals } from '../../src/lib/history';
 import { compareWeeks, detectPRs, fmtPct } from '../../src/lib/stats';
 import { useDraftStore, useHasHydrated } from '../../src/store/draft';
+import { GUEST } from '../../src/store/local';
 import { colors } from '../../src/theme';
 
 export default function Dashboard() {
   const router = useRouter();
-  const { session, displayName } = useAuth();
+  const { session, displayName, isGuest, exitOfflineMode } = useAuth();
   const { workouts, loading, error, refresh } = useWorkouts();
   const u = useUnits();
   const hydrated = useHasHydrated();
   const { draft, ownerId, start } = useDraftStore();
-  const userId = session?.user.id ?? '';
+  const userId = session?.user.id ?? GUEST;
   const hasDraft = hydrated && !!draft && ownerId === userId;
 
   const data = useMemo(() => {
@@ -49,14 +51,20 @@ export default function Dashboard() {
         refreshControl={<RefreshControl refreshing={false} onRefresh={refresh} tintColor={colors.accent} />}
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Pressable onPress={() => router.push('/account')} accessibilityRole="button" accessibilityLabel="Open account">
-            <Text style={{ color: colors.muted }}>Welcome back,</Text>
+          <Pressable
+            onPress={() => (isGuest ? exitOfflineMode() : router.push('/account'))}
+            accessibilityRole="button"
+            accessibilityLabel={isGuest ? 'Sign in' : 'Open account'}
+          >
+            <Text style={{ color: colors.muted }}>{isGuest ? 'Not signed in. Tap to sign in' : 'Welcome back,'}</Text>
             <Text style={{ fontSize: 30, fontWeight: '800' }}>
               {displayName} <Text style={{ fontSize: 18, color: colors.accent }}>›</Text>
             </Text>
           </Pressable>
           <IconButton icon="cog" onPress={() => router.push('/settings')} accessibilityLabel="Settings" />
         </View>
+
+        <StatusBanner />
 
         <Button
           mode="contained"

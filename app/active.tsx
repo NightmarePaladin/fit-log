@@ -5,7 +5,9 @@ import { Button, IconButton, Text } from 'react-native-paper';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { showDialog } from '../src/lib/dialog';
-import { saveWorkout } from '../src/api/workouts';
+import { useAuth } from '../src/auth/AuthProvider';
+import { StatusBanner } from '../src/components/StatusBanner';
+import { finishWorkout } from '../src/lib/saveFlow';
 import { ExercisePicker } from '../src/components/ExercisePicker';
 import { Card } from '../src/components/ui';
 import { useWorkouts } from '../src/hooks/useWorkouts';
@@ -32,6 +34,7 @@ export default function ActiveWorkout() {
   const { draft } = store;
   const { workouts } = useWorkouts();
   const u = useUnits();
+  const { session } = useAuth();
   const { bottom } = useSafeAreaInsets(); // keeps the save bar above Android's gesture/nav bar
   const [picker, setPicker] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -70,8 +73,9 @@ export default function ActiveWorkout() {
     setSaving(true);
     setError(null);
     try {
-      const id = await saveWorkout(toSave, u.unit);
-      router.replace({ pathname: '/workout/[id]', params: { id, saved: '1' } });
+      // Signed in and online: uploaded now. No connection, or no account: kept on this phone to upload later.
+      const { id, status } = await finishWorkout(toSave, u.unit, session?.user.id ?? null);
+      router.replace({ pathname: '/workout/[id]', params: { id, saved: status === 'queued' ? 'queued' : '1' } });
       store.discard();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not save workout. Your draft is still here.');
@@ -120,6 +124,7 @@ export default function ActiveWorkout() {
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 160 + bottom }} keyboardShouldPersistTaps="handled">
+        <StatusBanner />
         {draft.exercises.length === 0 && (
           <Card style={{ alignItems: 'center', gap: 12 }}>
             <MaterialCommunityIcons name="dumbbell" size={40} color={colors.accent} />

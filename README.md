@@ -37,6 +37,16 @@ Optional demo data: `supabase/seed/demo_workouts.sql` creates ~4 weeks of workou
 3. **Supabase** → Authentication → URL Configuration → *Redirect URLs*: add `fitlog://auth/callback` (and `exp://**` if you ever use Expo Go; not recommended).
 4. The app scheme is `fitlog` (`app.json`). The redirect URI is built with `Linking.createURL('auth/callback')`.
 
+## Offline use (gyms with no signal)
+- **Signed-in users stay signed in offline.** The saved session is used when the connection is missing or slow (the app stops waiting after 6 seconds), so you are not sent to the login screen. Recent workouts are cached on the phone, so Last Workout, History, Dashboard and Progress keep working.
+- **Finishing a workout with no connection saves it on the phone** ("Saved on this phone") and uploads automatically when you are back online. A banner shows what is waiting, with an **Upload now** button.
+- **Access while offline** (login screen): use the app with no account. Workouts, custom exercises and the lb/kg setting stay on the phone. When you later sign in, the app **asks** before uploading them to that account (Upload / Not now / Delete). Nothing is uploaded without that choice.
+- **No duplicates:** each workout gets its own id on the phone, and the database save (`0007_idempotent_save.sql`) replaces a workout with the same id, so retries and re-uploads are safe. Another user cannot overwrite your workout by reusing its id.
+- **Privacy:** offline mode shows only workouts waiting on the phone, never a signed-in user's cached history. Signing out clears the cached copy of your server data but keeps un-uploaded workouts (the app warns first). A signed-in user only sees their own waiting workouts.
+- The 34 built-in exercises ship with the app (`src/data/library.ts`), so the picker works on a first launch with no signal.
+- Needs a connection: changing your name, deleting a workout that is on the server, and deleting your account. Offline Progress uses the 150 most recent cached workouts.
+- Adds the native module `@react-native-community/netinfo`, so it needs a new Android build (not just a refresh).
+
 ## Email + password accounts
 The login screen has **Sign in / Create account** tabs (email + password, name on registration) alongside Google. Passwords need 8+ characters with letters and numbers; **Forgot password?** emails a reset link, and email users can change their password on the Account page.
 
@@ -115,5 +125,5 @@ Data flow: screens load completed workouts (nested select) → `stats.ts` comput
 Security: every table has RLS; child tables check ownership through their parent workout. `anon` has no table access. The draft stores an `ownerId` and the Dashboard ignores drafts from another account. Weights are stored in pounds (`profiles.unit` is constrained to `lb` for the MVP).
 
 ## Known limits
-- Pounds only; no rest timer, plate calculator, or offline save queue (drafts are local, saves need a connection).
+- No rest timer or plate calculator. Offline sync is tested with unit tests and a browser walk-through of offline mode; the signed-in sync should also be checked on a phone in airplane mode.
 - History/Progress load the latest 300 workouts and compute in-app.
