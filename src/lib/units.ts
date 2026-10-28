@@ -36,6 +36,8 @@ export type UnitFormat = {
   fmt: (lb: number) => string;
   /** stored lb + reps → "135 × 10" */
   set: (lb: number, reps: number) => string;
+  /** like set(), but a reps-only exercise with no weight reads "12 reps" */
+  setOrReps: (lb: number, reps: number, repsOnly?: boolean) => string;
   /** stored-lb volume → "12,345" */
   vol: (lb: number) => string;
   /** weight typed by the user in the display unit → lb for storage */
@@ -49,6 +51,8 @@ export function makeUnitFormat(unit: Unit): UnitFormat {
     w: (lb) => toDisplay(lb, unit),
     fmt: (lb) => trimNum(toDisplay(lb, unit)),
     set: (lb, reps) => `${trimNum(toDisplay(lb, unit))} × ${reps}`,
+    setOrReps: (lb, reps, repsOnly) =>
+      repsOnly && lb === 0 ? `${reps} reps` : `${trimNum(toDisplay(lb, unit))} × ${reps}`,
     vol: (lb) => Math.round(toDisplay(lb, unit)).toLocaleString(),
     toLb: (value) => toLb(value, unit),
   };

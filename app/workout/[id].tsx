@@ -162,8 +162,8 @@ export default function WorkoutDetail() {
                 <Text style={{ color: colors.muted }}>sets</Text>
               </View>
               <View style={{ alignItems: 'center' }}>
-                <Text style={{ fontSize: 30, fontWeight: '800', color: colors.accent }}>{u.vol(totals.volume)}</Text>
-                <Text style={{ color: colors.muted }}>{u.label} volume</Text>
+                <Text style={{ fontSize: 30, fontWeight: '800', color: colors.accent }}>{totals.volume > 0 ? u.vol(totals.volume) : totals.reps}</Text>
+                <Text style={{ color: colors.muted }}>{totals.volume > 0 ? `${u.label} volume` : 'total reps'}</Text>
               </View>
             </Card>
 
@@ -173,7 +173,7 @@ export default function WorkoutDetail() {
                 {[...we.workout_sets].sort((a, b) => a.set_order - b.set_order).map((s) => (
                   <View key={s.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                     <Text style={{ width: 24, color: colors.muted, fontWeight: '700' }}>{s.set_order}</Text>
-                    <Text style={{ flex: 1, fontSize: 20, fontWeight: '700' }}>{u.set(Number(s.weight), s.reps)}</Text>
+                    <Text style={{ flex: 1, fontSize: 20, fontWeight: '700' }}>{u.setOrReps(Number(s.weight), s.reps, we.exercises?.reps_only)}</Text>
                     <MaterialCommunityIcons
                       name={s.completed ? 'check-circle' : 'circle-outline'}
                       size={22}

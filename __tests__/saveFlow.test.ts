@@ -139,7 +139,7 @@ describe('uploadPending', () => {
     useLocalStore.getState().addCustomExercise({ id: 'cx', name: 'Cable Fly', muscle_group: null, user_id: 'u1', is_custom: true, ownerId: 'u1' });
     createEx.mockResolvedValue({});
     await uploadPending('u1');
-    expect(createEx).toHaveBeenCalledWith('Cable Fly', null, 'u1', 'cx');
+    expect(createEx).toHaveBeenCalledWith('Cable Fly', null, 'u1', 'cx', false);
     expect(useLocalStore.getState().customExercises).toHaveLength(0);
   });
 

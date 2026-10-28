@@ -13,7 +13,7 @@ type DraftState = {
   start: (ownerId: string, exercises?: DraftExercise[], extra?: Partial<Draft>) => void;
   discard: () => void;
   setName: (name: string) => void;
-  addExercise: (exerciseId: string, name: string, setCount?: number) => void;
+  addExercise: (exerciseId: string, name: string, setCount?: number, repsOnly?: boolean) => void;
   removeExercise: (key: string) => void;
   addSet: (exKey: string) => void;
   removeSet: (exKey: string, setKey: string) => void;
@@ -62,13 +62,14 @@ export const useDraftStore = create<DraftState>()(
           },
         });
       },
-      addExercise: (exerciseId, name, setCount = 3) => {
+      addExercise: (exerciseId, name, setCount = 3, repsOnly = false) => {
         const d = get().draft;
         if (!d) return;
         const ex: DraftExercise = {
           key: uid(),
           exerciseId,
           name,
+          repsOnly,
           sets: Array.from({ length: Math.max(1, setCount) }, () => blankSet()),
         };
         set({ draft: { ...d, exercises: [...d.exercises, ex] } });

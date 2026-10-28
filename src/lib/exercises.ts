@@ -29,7 +29,12 @@ export async function loadExercises(userId: string | null): Promise<{ exercises:
 }
 
 /** Create a custom exercise: on the server when possible, otherwise on the phone to upload later. */
-export async function createCustomExercise(name: string, userId: string | null, known: Exercise[]): Promise<Exercise> {
+export async function createCustomExercise(
+  name: string,
+  userId: string | null,
+  known: Exercise[],
+  repsOnly = false,
+): Promise<Exercise> {
   const clean = name.trim();
   if (!clean) throw new Error('Enter a name.');
   if (known.some((e) => e.name.toLowerCase() === clean.toLowerCase())) {
@@ -38,12 +43,14 @@ export async function createCustomExercise(name: string, userId: string | null, 
   if (userId) {
     try {
       if (!(await hasLiveSession())) throw new Error('offline');
-      return await createExercise(clean, null, userId);
+      return await createExercise(clean, null, userId, undefined, repsOnly);
     } catch (e) {
       if (!isNetworkError(e) && !(e instanceof Error && e.message === 'offline')) throw e;
     }
   }
-  const local: LocalExercise = { id: newId(), user_id: userId, name: clean, muscle_group: null, is_custom: true, ownerId: userId };
+  const local: LocalExercise = {
+    id: newId(), user_id: userId, name: clean, muscle_group: null, is_custom: true, reps_only: repsOnly, ownerId: userId,
+  };
   useLocalStore.getState().addCustomExercise(local);
   return local;
 }

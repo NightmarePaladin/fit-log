@@ -23,15 +23,22 @@ export type WeekSummary = {
   bestReps: number | null;
   volume: number;
   setCount: number;
+  /** most reps in any single completed set (the headline number for reps-only exercises) */
+  maxReps: number | null;
+  /** total reps over all completed sets */
+  totalReps: number;
 };
 
 export function summarize(sets: SetRecord[]): WeekSummary {
   const best = bestSet(sets);
+  const working = sets.filter(isWorking);
   return {
     bestWeight: best?.weight ?? null,
     bestReps: best?.reps ?? null,
     volume: volume(sets),
-    setCount: sets.filter(isWorking).length,
+    setCount: working.length,
+    maxReps: working.length ? Math.max(...working.map((s) => s.reps)) : null,
+    totalReps: working.reduce((n, s) => n + s.reps, 0),
   };
 }
 
@@ -52,6 +59,11 @@ export type WeekComparison = {
   strengthChangePct: number | null;
   likeForLike: boolean;
   note: string;
+  /** reps-only exercises: change in best single-set reps / total reps (null when a week is missing) */
+  repsDelta: number | null;
+  repsChangePct: number | null;
+  totalRepsDelta: number;
+  totalRepsChangePct: number | null;
 };
 
 export function compareWeeks(
@@ -89,6 +101,10 @@ export function compareWeeks(
     strengthChangePct,
     likeForLike,
     note,
+    repsDelta: cur.maxReps != null && prev.maxReps != null ? cur.maxReps - prev.maxReps : null,
+    repsChangePct: cur.maxReps != null && prev.maxReps != null ? pct(prev.maxReps, cur.maxReps) : null,
+    totalRepsDelta: cur.totalReps - prev.totalReps,
+    totalRepsChangePct: pct(prev.totalReps, cur.totalReps),
   };
 }
 
@@ -145,7 +161,14 @@ export function detectPRs(sets: FlatSet[]): PR[] {
   return prs.sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime());
 }
 
-export type WeekPoint = { key: string; label: string; bestWeight: number | null; volume: number };
+export type WeekPoint = {
+  key: string;
+  label: string;
+  bestWeight: number | null;
+  volume: number;
+  maxReps: number | null;
+  totalReps: number;
+};
 
 /** Oldest → newest series of weekly best weight and volume for charts. */
 export function weeklySeries(
@@ -161,7 +184,10 @@ export function weeklySeries(
     const ws = addWeeks(start, -i);
     const key = weekKey(ws);
     const sum = summarize(relevant.filter((s) => weekKey(new Date(s.completedAt)) === key));
-    out.push({ key, label: formatWeekLabel(ws), bestWeight: sum.bestWeight, volume: sum.volume });
+    out.push({
+      key, label: formatWeekLabel(ws), bestWeight: sum.bestWeight, volume: sum.volume,
+      maxReps: sum.maxReps, totalReps: sum.totalReps,
+    });
   }
   return out;
 }

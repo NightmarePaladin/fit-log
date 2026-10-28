@@ -13,10 +13,18 @@ export async function createExercise(
   muscleGroup: string | null,
   userId: string,
   id?: string,
+  repsOnly = false,
 ): Promise<Exercise> {
   const { data, error } = await supabase
     .from('exercises')
-    .insert({ ...(id ? { id } : {}), name: name.trim(), muscle_group: muscleGroup, user_id: userId, is_custom: true })
+    .insert({
+      ...(id ? { id } : {}),
+      name: name.trim(),
+      muscle_group: muscleGroup,
+      user_id: userId,
+      is_custom: true,
+      reps_only: repsOnly,
+    })
     .select()
     .single();
   if (error) {
@@ -39,7 +47,7 @@ export async function findCustomExerciseByName(userId: string, name: string): Pr
 
 const WORKOUT_SELECT =
   'id,name,started_at,completed_at,status,' +
-  'workout_exercises(id,position,exercise_id,exercises(name),' +
+  'workout_exercises(id,position,exercise_id,exercises(name,reps_only),' +
   'workout_sets(id,exercise_id,set_order,weight,reps,completed))';
 
 export async function fetchWorkouts(): Promise<WorkoutRow[]> {

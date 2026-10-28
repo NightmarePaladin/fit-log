@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { FlatList, Modal, Pressable, View } from 'react-native';
-import { ActivityIndicator, Button, Text, TextInput } from 'react-native-paper';
+import { ActivityIndicator, Button, SegmentedButtons, Text, TextInput } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../auth/AuthProvider';
 import { createCustomExercise, loadExercises } from '../lib/exercises';
@@ -30,6 +30,11 @@ function PickerBody({ onClose, onPick }: Omit<Props, 'visible'>) {
   const [offline, setOffline] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
+
+  // "Create custom exercise" form
+  const [formOpen, setFormOpen] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [repsOnly, setRepsOnly] = useState(false);
   const [creating, setCreating] = useState(false);
 
   useEffect(() => {
@@ -48,13 +53,21 @@ function PickerBody({ onClose, onPick }: Omit<Props, 'visible'>) {
     return q ? all.filter((e) => e.name.toLowerCase().includes(q)) : all;
   }, [all, query]);
 
-  const exactMatch = all.some((e) => e.name.toLowerCase() === query.trim().toLowerCase());
+  const typed = query.trim();
+  const exactMatch = all.some((e) => e.name.toLowerCase() === typed.toLowerCase());
+
+  const openForm = () => {
+    setNewName(typed);
+    setRepsOnly(false);
+    setError(null);
+    setFormOpen(true);
+  };
 
   const create = async () => {
     setCreating(true);
     setError(null);
     try {
-      onPick(await createCustomExercise(query, userId, all));
+      onPick(await createCustomExercise(newName, userId, all, repsOnly));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not create exercise');
     } finally {
@@ -77,17 +90,47 @@ function PickerBody({ onClose, onPick }: Omit<Props, 'visible'>) {
           )}
           <TextInput
             mode="outlined"
-            placeholder="Search or type a new exercise"
+            placeholder="Search or create an exercise"
             value={query}
             onChangeText={setQuery}
-            autoFocus
+            autoFocus={!formOpen}
             left={<TextInput.Icon icon="magnify" />}
           />
-          {error && <Text style={{ color: colors.danger }}>{error}</Text>}
-          {query.trim().length > 0 && !exactMatch && (
-            <Button mode="contained-tonal" icon="plus" loading={creating} disabled={creating} onPress={create}>
-              Create custom “{query.trim()}”
-            </Button>
+
+          {formOpen ? (
+            <View
+              style={{ gap: 12, padding: 14, borderRadius: 16, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.accent }}
+            >
+              <Text style={{ fontWeight: '800', fontSize: 16 }}>New custom exercise</Text>
+              <TextInput mode="outlined" label="Exercise name" value={newName} onChangeText={setNewName} autoFocus maxLength={80} />
+              <SegmentedButtons
+                value={repsOnly ? 'reps' : 'weight'}
+                onValueChange={(v) => setRepsOnly(v === 'reps')}
+                buttons={[
+                  { value: 'weight', label: 'Weight + reps', icon: 'weight-lifter' },
+                  { value: 'reps', label: 'Reps only', icon: 'human-handsup' },
+                ]}
+              />
+              <Text style={{ color: colors.muted, fontSize: 12 }}>
+                {repsOnly
+                  ? 'For bodyweight moves like push-ups or pull-ups: you log reps, no weight.'
+                  : 'You log the weight and the reps for each set.'}
+              </Text>
+              {error && <Text style={{ color: colors.danger }}>{error}</Text>}
+              <View style={{ flexDirection: 'row', gap: 8, justifyContent: 'flex-end' }}>
+                <Button disabled={creating} onPress={() => setFormOpen(false)}>Cancel</Button>
+                <Button mode="contained" loading={creating} disabled={creating || newName.trim().length === 0} onPress={create}>
+                  Create &amp; add
+                </Button>
+              </View>
+            </View>
+          ) : (
+            <>
+              {error && <Text style={{ color: colors.danger }}>{error}</Text>}
+              <Button mode="contained-tonal" icon="plus" onPress={openForm} contentStyle={{ height: 46 }}>
+                {typed && !exactMatch ? `Create “${typed}”` : 'Create custom exercise'}
+              </Button>
+            </>
           )}
         </View>
         {loading ? (
@@ -106,10 +149,16 @@ function PickerBody({ onClose, onPick }: Omit<Props, 'visible'>) {
                 <Text style={{ fontSize: 17, fontWeight: '600' }}>{item.name}</Text>
                 <Text style={{ color: colors.muted, fontSize: 13 }}>
                   {item.is_custom ? 'Custom' : item.muscle_group}
+                  {item.reps_only ? '  ·  Reps only' : ''}
                 </Text>
               </Pressable>
             )}
-            ListEmptyComponent={<Text style={{ color: colors.muted, textAlign: 'center', marginTop: 24 }}>No matches</Text>}
+            ListEmptyComponent={
+              <View style={{ alignItems: 'center', padding: 24, gap: 8 }}>
+                <Text style={{ color: colors.muted }}>No matching exercise.</Text>
+                {!formOpen && <Button onPress={openForm}>{typed ? `Create “${typed}”` : 'Create custom exercise'}</Button>}
+              </View>
+            }
           />
         )}
       </SafeAreaView>

@@ -61,6 +61,7 @@ export function workoutToDraftExercises(w: WorkoutRow, keepCompleted = false, un
       key: uid(),
       exerciseId: we.exercise_id,
       name: we.exercises?.name ?? 'Exercise',
+      repsOnly: !!we.exercises?.reps_only,
       sets: [...we.workout_sets]
         .sort((a, b) => a.set_order - b.set_order)
         .map((s) => ({
@@ -72,9 +73,18 @@ export function workoutToDraftExercises(w: WorkoutRow, keepCompleted = false, un
     }));
 }
 
+/** Ids of reps-only (bodyweight) exercises seen in these workouts. */
+export function exerciseRepsOnly(workouts: WorkoutRow[]): Set<string> {
+  const out = new Set<string>();
+  for (const w of workouts)
+    for (const we of w.workout_exercises) if (we.exercises?.reps_only) out.add(we.exercise_id);
+  return out;
+}
+
 export function workoutTotals(w: WorkoutRow) {
   const sets = w.workout_exercises.flatMap((we) =>
     we.workout_sets.map((s) => ({ weight: Number(s.weight), reps: s.reps, completed: s.completed })),
   );
-  return { volume: volume(sets), sets: sets.filter((s) => s.completed).length };
+  const done = sets.filter((s) => s.completed);
+  return { volume: volume(sets), sets: done.length, reps: done.reduce((n, s) => n + s.reps, 0) };
 }

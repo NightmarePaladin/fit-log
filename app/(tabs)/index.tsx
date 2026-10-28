@@ -9,7 +9,7 @@ import { Card, Empty, ErrorBanner, SectionTitle, Stat } from '../../src/componen
 import { useUnits } from '../../src/hooks/useUnits';
 import { useWorkouts } from '../../src/hooks/useWorkouts';
 import { formatDay, weekKey } from '../../src/lib/dates';
-import { exerciseNames, flattenWorkouts, workoutTotals } from '../../src/lib/history';
+import { exerciseNames, exerciseRepsOnly, flattenWorkouts, workoutTotals } from '../../src/lib/history';
 import { compareWeeks, detectPRs, fmtPct } from '../../src/lib/stats';
 import { useDraftStore, useHasHydrated } from '../../src/store/draft';
 import { GUEST } from '../../src/store/local';
@@ -36,7 +36,7 @@ export default function Dashboard() {
     const summary = exIds
       .map((id) => ({ id, name: names.get(id) ?? 'Exercise', cmp: compareWeeks(flat, id) }))
       .filter((r) => r.cmp.previous.bestWeight != null && r.cmp.current.bestWeight != null);
-    return { names, weekWorkouts, weekVolume, prs, summary, last: workouts[0] };
+    return { names, repsOnlyIds: exerciseRepsOnly(workouts), weekWorkouts, weekVolume, prs, summary, last: workouts[0] };
   }, [workouts]);
 
   const startWorkout = () => {
@@ -100,7 +100,9 @@ export default function Dashboard() {
                 {data.last.workout_exercises.map((e) => e.exercises?.name).filter(Boolean).join(' · ')}
               </Text>
               <Text style={{ color: colors.accent, marginTop: 4, fontWeight: '700' }}>
-                {u.vol(workoutTotals(data.last).volume)} {u.label} total
+                {workoutTotals(data.last).volume > 0
+                  ? `${u.vol(workoutTotals(data.last).volume)} ${u.label} total`
+                  : `${workoutTotals(data.last).reps} reps total`}
               </Text>
             </Card>
           </Pressable>
@@ -119,7 +121,7 @@ export default function Dashboard() {
                   <Text style={{ color: colors.muted, fontSize: 12 }}>{formatDay(pr.completedAt)}</Text>
                 </View>
                 <Text style={{ color: colors.gold, fontWeight: '800', fontSize: 17 }}>
-                  {u.set(pr.weight, pr.reps)}
+                  {u.setOrReps(pr.weight, pr.reps, data.repsOnlyIds.has(pr.exerciseId))}
                 </Text>
               </View>
             ))}
@@ -136,21 +138,28 @@ export default function Dashboard() {
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontWeight: '700' }}>{r.name}</Text>
                   <Text style={{ color: colors.muted, fontSize: 12 }}>
-                    {u.fmt(r.cmp.previous.bestWeight!)} → {u.fmt(r.cmp.current.bestWeight!)} {u.label}
-                    {r.cmp.likeForLike ? ` at ${r.cmp.current.bestReps} reps` : ' (reps differ)'}
+                    {data.repsOnlyIds.has(r.id)
+                      ? `${r.cmp.previous.maxReps} → ${r.cmp.current.maxReps} reps (best set)`
+                      : `${u.fmt(r.cmp.previous.bestWeight!)} → ${u.fmt(r.cmp.current.bestWeight!)} ${u.label}${
+                          r.cmp.likeForLike ? ` at ${r.cmp.current.bestReps} reps` : ' (reps differ)'
+                        }`}
                   </Text>
                 </View>
                 <Text
                   style={{
                     fontWeight: '800', fontSize: 16,
-                    color: r.cmp.strengthChangePct != null
-                      ? r.cmp.strengthChangePct >= 0 ? colors.success : colors.danger
-                      : colors.muted,
+                    color: data.repsOnlyIds.has(r.id)
+                      ? (r.cmp.repsDelta ?? 0) >= 0 ? colors.success : colors.danger
+                      : r.cmp.strengthChangePct != null
+                        ? r.cmp.strengthChangePct >= 0 ? colors.success : colors.danger
+                        : colors.muted,
                   }}
                 >
-                  {r.cmp.strengthChangePct != null
-                    ? fmtPct(r.cmp.strengthChangePct)
-                    : `${(r.cmp.weightDelta ?? 0) > 0 ? '+' : ''}${u.fmt(r.cmp.weightDelta ?? 0)} ${u.label}`}
+                  {data.repsOnlyIds.has(r.id)
+                    ? `${(r.cmp.repsDelta ?? 0) > 0 ? '+' : ''}${r.cmp.repsDelta ?? 0} reps`
+                    : r.cmp.strengthChangePct != null
+                      ? fmtPct(r.cmp.strengthChangePct)
+                      : `${(r.cmp.weightDelta ?? 0) > 0 ? '+' : ''}${u.fmt(r.cmp.weightDelta ?? 0)} ${u.label}`}
                 </Text>
               </View>
             ))}

@@ -103,3 +103,45 @@ describe('weeklySeries', () => {
     expect(pts[2].bestWeight).toBe(235);
   });
 });
+
+describe('reps-only (bodyweight) exercises', () => {
+  const now = new Date(2026, 9, 28, 12); // Wed Oct 28 2026
+  const pu = (id: string, date: string, reps: number, completed = true) => set(id, date, 0, reps, completed, 'pushup');
+
+  it('compares best single-set reps and total reps week over week', () => {
+    const sets = [
+      pu('a', '2026-10-21T12:00:00', 10), pu('a', '2026-10-21T12:05:00', 8),
+      pu('b', '2026-10-27T12:00:00', 12), pu('b', '2026-10-27T12:05:00', 9), pu('b', '2026-10-27T12:10:00', 9),
+    ];
+    const c = compareWeeks(sets, 'pushup', now);
+    expect(c.previous.maxReps).toBe(10);
+    expect(c.current.maxReps).toBe(12);
+    expect(c.repsDelta).toBe(2);
+    expect(c.repsChangePct).toBeCloseTo(20, 5);
+    expect(c.previous.totalReps).toBe(18);
+    expect(c.current.totalReps).toBe(30);
+    expect(c.totalRepsDelta).toBe(12);
+    expect(c.totalRepsChangePct).toBeCloseTo(66.67, 1);
+    expect(c.current.volume).toBe(0); // no weight, so no volume
+    expect(c.strengthChangePct).toBeNull(); // never reported as a weight/strength percentage
+  });
+
+  it('ignores uncompleted sets and reports null when a week is missing', () => {
+    const c = compareWeeks([pu('a', '2026-10-21T12:00:00', 10), pu('b', '2026-10-27T12:00:00', 30, false)], 'pushup', now);
+    expect(c.current.maxReps).toBeNull();
+    expect(c.repsDelta).toBeNull();
+    expect(c.repsChangePct).toBeNull();
+  });
+
+  it('a rep PR is detected when weight is always 0', () => {
+    const prs = detectPRs([pu('a', '2026-10-05T12:00:00', 10), pu('b', '2026-10-12T12:00:00', 10), pu('c', '2026-10-19T12:00:00', 12)]);
+    expect(prs).toHaveLength(1);
+    expect(prs[0]).toMatchObject({ workoutId: 'c', reps: 12, weight: 0, kind: 'reps' });
+  });
+
+  it('weekly series carries reps numbers for charts', () => {
+    const pts = weeklySeries([pu('a', '2026-10-27T12:00:00', 12), pu('b', '2026-10-27T12:30:00', 8)], 'pushup', 2, now);
+    expect(pts[1]).toMatchObject({ maxReps: 12, totalReps: 20, volume: 0 });
+    expect(pts[0].maxReps).toBeNull();
+  });
+});

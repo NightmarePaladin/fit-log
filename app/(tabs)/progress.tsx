@@ -8,7 +8,7 @@ import { Card, Empty, ErrorBanner, SectionTitle } from '../../src/components/ui'
 import { useUnits } from '../../src/hooks/useUnits';
 import { useWorkouts } from '../../src/hooks/useWorkouts';
 import { addWeeks, formatDay, startOfWeek } from '../../src/lib/dates';
-import { exerciseNames, flattenWorkouts } from '../../src/lib/history';
+import { exerciseNames, exerciseRepsOnly, flattenWorkouts } from '../../src/lib/history';
 import { compareWeeks, detectPRs, fmtNum, fmtPct, weeklySeries } from '../../src/lib/stats';
 import { colors } from '../../src/theme';
 
@@ -45,7 +45,10 @@ export default function Progress() {
   const flat = useMemo(() => flattenWorkouts(workouts), [workouts]);
   const names = useMemo(() => exerciseNames(workouts), [workouts]);
   const exerciseList = useMemo(() => [...names.entries()].sort((a, b) => a[1].localeCompare(b[1])), [names]);
+  const repsOnlyIds = useMemo(() => exerciseRepsOnly(workouts), [workouts]);
   const effective = selected && names.has(selected) ? selected : null;
+  /** a bodyweight exercise is selected: progress is measured in reps, not weight */
+  const repsMode = !!effective && repsOnlyIds.has(effective);
 
   const cmp = useMemo(() => compareWeeks(flat, effective), [flat, effective]);
   const series = useMemo(() => weeklySeries(flat, effective, 8), [flat, effective]);
@@ -58,10 +61,12 @@ export default function Progress() {
   const range = (d: Date) => d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   const chartWidth = width - 32 - 32 - 40;
 
-  const toPoints = (key: 'bestWeight' | 'volume') =>
-    series.filter((p) => p[key] != null && (key === 'bestWeight' || p.volume > 0)).map((p) => ({ value: u.w(p[key] as number), label: p.label }));
-  const weightPts = toPoints('bestWeight');
-  const volumePts = toPoints('volume');
+  const toPoints = (key: 'bestWeight' | 'volume' | 'maxReps' | 'totalReps') =>
+    series
+      .filter((p) => p[key] != null && (key !== 'volume' || p.volume > 0) && (key !== 'totalReps' || p.totalReps > 0))
+      .map((p) => ({ value: key === 'bestWeight' || key === 'volume' ? u.w(p[key] as number) : (p[key] as number), label: p.label }));
+  const weightPts = repsMode ? toPoints('maxReps') : toPoints('bestWeight');
+  const volumePts = repsMode ? toPoints('totalReps') : toPoints('volume');
 
   const chart = (pts: { value: number; label: string }[], color: string) => (
     <LineChart
@@ -122,6 +127,30 @@ export default function Progress() {
               This week ({range(weekStart)}–{range(addWeeks(weekStart, 1))} excl.) vs last week. Weeks run Mon–Sun.
             </Text>
 
+            {repsMode ? (
+              <Card style={{ gap: 14 }}>
+                <View style={{ flexDirection: 'row', gap: 12 }}>
+                  <Pair label="Best set" prev={cmp.previous.maxReps} cur={cmp.current.maxReps} unit="reps" />
+                  <Pair label="Total reps" prev={cmp.previous.totalReps || null} cur={cmp.current.totalReps || null} unit="reps" />
+                </View>
+                <View style={{ height: 1, backgroundColor: colors.border }} />
+                <View style={{ flexDirection: 'row', gap: 12 }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: colors.muted, fontSize: 12, textTransform: 'uppercase' }}>Best set change</Text>
+                    <Delta value={cmp.repsDelta} suffix=" reps" />
+                    <Text style={{ color: colors.muted, fontSize: 12 }}>{fmtPct(cmp.repsChangePct)}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: colors.muted, fontSize: 12, textTransform: 'uppercase' }}>Total reps change</Text>
+                    <Delta value={cmp.previous.totalReps > 0 ? cmp.totalRepsDelta : null} suffix=" reps" />
+                    <Text style={{ color: colors.muted, fontSize: 12 }}>{fmtPct(cmp.totalRepsChangePct)}</Text>
+                  </View>
+                </View>
+                <Text style={{ color: colors.muted, fontSize: 12 }}>
+                  Bodyweight exercise: progress is measured in reps, not weight.
+                </Text>
+              </Card>
+            ) : (
             <Card style={{ gap: 14 }}>
               <View style={{ flexDirection: 'row', gap: 12 }}>
                 {effective ? (
@@ -147,8 +176,9 @@ export default function Progress() {
                 </View>
               </View>
             </Card>
+            )}
 
-            {effective && (
+            {effective && !repsMode && (
               <Card
                 style={{
                   gap: 6,
@@ -172,7 +202,9 @@ export default function Progress() {
               </Card>
             )}
 
-            <SectionTitle>{effective ? 'Best weight per week' : 'Total volume per week'}</SectionTitle>
+            <SectionTitle>
+              {repsMode ? 'Best set (reps) per week' : effective ? 'Best weight per week' : 'Total volume per week'}
+            </SectionTitle>
             <Card>
               {(effective ? weightPts : volumePts).length >= 2 ? (
                 chart(effective ? weightPts : volumePts, colors.accent)
@@ -183,7 +215,7 @@ export default function Progress() {
 
             {effective && (
               <>
-                <SectionTitle>Total volume per week</SectionTitle>
+                <SectionTitle>{repsMode ? 'Total reps per week' : 'Total volume per week'}</SectionTitle>
                 <Card>
                   {volumePts.length >= 2 ? (
                     chart(volumePts, colors.blue)
@@ -208,7 +240,9 @@ export default function Progress() {
                         {formatDay(pr.completedAt)} · {pr.kind === 'weight' ? 'weight PR' : 'rep PR'}
                       </Text>
                     </View>
-                    <Text style={{ color: colors.gold, fontWeight: '800', fontSize: 17 }}>{u.set(pr.weight, pr.reps)}</Text>
+                    <Text style={{ color: colors.gold, fontWeight: '800', fontSize: 17 }}>
+                      {u.setOrReps(pr.weight, pr.reps, repsOnlyIds.has(pr.exerciseId))}
+                    </Text>
                   </View>
                 ))
               )}

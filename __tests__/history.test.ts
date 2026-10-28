@@ -38,7 +38,7 @@ describe('history helpers', () => {
     ]);
   });
   it('totals and flatten', () => {
-    expect(workoutTotals(older)).toEqual({ volume: 135 * 10 + 155 * 8 + 175 * 6, sets: 3 });
+    expect(workoutTotals(older)).toEqual({ volume: 135 * 10 + 155 * 8 + 175 * 6, sets: 3, reps: 24 });
     expect(flattenWorkouts([older])).toHaveLength(3);
   });
 });

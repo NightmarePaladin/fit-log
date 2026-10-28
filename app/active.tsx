@@ -49,7 +49,7 @@ export default function ActiveWorkout() {
   if (!draft) return <Redirect href="/" />;
 
   const onPick = (ex: Exercise) => {
-    store.addExercise(ex.id, ex.name, prev.get(ex.id)?.length ?? 3);
+    store.addExercise(ex.id, ex.name, prev.get(ex.id)?.length ?? 3, !!ex.reps_only);
     setPicker(false);
   };
 
@@ -197,7 +197,7 @@ function ExerciseCard({ ex, prev }: { ex: DraftExercise; prev: PrevSet[] }) {
         <Text style={{ width: 24, color: colors.muted, fontSize: 12 }}>SET</Text>
         <Text style={{ width: 96, color: colors.muted, fontSize: 12 }}>LAST WORKOUT</Text>
         <Text style={{ flex: 1, color: colors.muted, fontSize: 12, textAlign: 'center' }}>
-          TODAY  ({u.label.toUpperCase()} × REPS)
+          {ex.repsOnly ? 'TODAY  (REPS)' : `TODAY  (${u.label.toUpperCase()} × REPS)`}
         </Text>
       </View>
 
@@ -208,32 +208,38 @@ function ExerciseCard({ ex, prev }: { ex: DraftExercise; prev: PrevSet[] }) {
             <Text style={{ width: 24, fontSize: 16, fontWeight: '700', color: colors.muted }}>{i + 1}</Text>
             <Pressable
               disabled={!p}
-              onPress={() => p && updateSet(ex.key, s.key, { weight: u.fmt(p.weight), reps: String(p.reps) })}
-              accessibilityLabel={p ? `Copy previous set ${u.set(p.weight, p.reps)}` : 'No previous set'}
+              onPress={() =>
+                p && updateSet(ex.key, s.key, { weight: ex.repsOnly ? '' : u.fmt(p.weight), reps: String(p.reps) })
+              }
+              accessibilityLabel={p ? `Copy previous set ${u.setOrReps(p.weight, p.reps, ex.repsOnly)}` : 'No previous set'}
               style={{
                 width: 96, height: 48, borderRadius: 12, justifyContent: 'center', alignItems: 'center',
                 flexDirection: 'row', gap: 4, borderWidth: 1, borderColor: p ? colors.accent : colors.border,
               }}
             >
               <Text style={{ color: p ? colors.text : colors.muted, fontSize: 13, fontWeight: '600' }}>
-                {p ? u.set(p.weight, p.reps) : '—'}
+                {p ? u.setOrReps(p.weight, p.reps, ex.repsOnly) : '—'}
               </Text>
               {p && <MaterialCommunityIcons name="arrow-right-bold" size={13} color={colors.accent} />}
             </Pressable>
             <View style={{ flex: 1, flexDirection: 'row', gap: 6, alignItems: 'center', justifyContent: 'center' }}>
+              {!ex.repsOnly && (
+                <>
+                  <TextInput
+                    style={input}
+                    value={s.weight}
+                    onChangeText={(t) => updateSet(ex.key, s.key, { weight: t.replace(/[^0-9.]/g, '') })}
+                    keyboardType="decimal-pad"
+                    placeholder={u.label}
+                    placeholderTextColor={colors.muted}
+                    selectTextOnFocus
+                    accessibilityLabel={`Set ${i + 1} weight`}
+                  />
+                  <Text style={{ color: colors.muted, fontSize: 18 }}>×</Text>
+                </>
+              )}
               <TextInput
-                style={input}
-                value={s.weight}
-                onChangeText={(t) => updateSet(ex.key, s.key, { weight: t.replace(/[^0-9.]/g, '') })}
-                keyboardType="decimal-pad"
-                placeholder={u.label}
-                placeholderTextColor={colors.muted}
-                selectTextOnFocus
-                accessibilityLabel={`Set ${i + 1} weight`}
-              />
-              <Text style={{ color: colors.muted, fontSize: 18 }}>×</Text>
-              <TextInput
-                style={[input, { minWidth: 56 }]}
+                style={[input, { minWidth: ex.repsOnly ? 120 : 56 }]}
                 value={s.reps}
                 onChangeText={(t) => updateSet(ex.key, s.key, { reps: t.replace(/[^0-9]/g, '') })}
                 keyboardType="number-pad"

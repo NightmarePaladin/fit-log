@@ -4,6 +4,8 @@ export type Exercise = {
   name: string;
   muscle_group: string | null;
   is_custom: boolean;
+  /** bodyweight exercise: logged with reps only (no weight) */
+  reps_only?: boolean;
 };
 
 /** A set as stored/used in stats. */
@@ -32,6 +34,8 @@ export type DraftExercise = {
   exerciseId: string;
   name: string;
   sets: DraftSet[];
+  /** reps-only (bodyweight) exercise: no weight box */
+  repsOnly?: boolean;
 };
 
 export type Draft = {
@@ -57,7 +61,7 @@ export type WorkoutExerciseRow = {
   id: string;
   position: number;
   exercise_id: string;
-  exercises: { name: string } | null;
+  exercises: { name: string; reps_only?: boolean } | null;
   workout_sets: WorkoutSetRow[];
 };
 
@@ -75,7 +79,7 @@ export type WorkoutRow = {
 /** A saved set; weight is in pounds (the canonical stored unit). */
 export type LocalSet = { weight: number; reps: number; completed: boolean };
 
-export type LocalWorkoutExercise = { exerciseId: string; name: string; sets: LocalSet[] };
+export type LocalWorkoutExercise = { exerciseId: string; name: string; sets: LocalSet[]; repsOnly?: boolean };
 
 /**
  * A workout saved on this phone that has not been uploaded yet.

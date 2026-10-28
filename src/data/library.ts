@@ -41,6 +41,11 @@ const rows: [string, string, string][] = [
   ['1b39b0f3-cdff-43a8-ac17-7ee805fc4593', 'Rear Delt Fly', 'Shoulders'],
 ];
 
+/** Bodyweight exercises logged with reps only (matches reps_only in the database). */
+const REPS_ONLY = new Set(['Push-Up', 'Pull-Up', 'Dip', 'Hanging Leg Raise']);
+
 export const LIBRARY: Exercise[] = rows
-  .map(([id, name, muscle_group]) => ({ id, name, muscle_group, user_id: null, is_custom: false }))
+  .map(([id, name, muscle_group]) => ({
+    id, name, muscle_group, user_id: null, is_custom: false, reps_only: REPS_ONLY.has(name),
+  }))
   .sort((a, b) => a.name.localeCompare(b.name));
