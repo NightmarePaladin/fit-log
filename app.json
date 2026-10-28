@@ -1,0 +1,42 @@
+{
+  "expo": {
+    "name": "FitLog",
+    "slug": "fit-log",
+    "scheme": "fitlog",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#14151A",
+    "android": {
+      "package": "com.fitlog.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#14151A",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-web-browser"
+    ],
+    "extra": {
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "277d8e44-7714-4bf0-a699-b83bc3675386"
+      }
+    },
+    "owner": "paladins"
+  }
+}
