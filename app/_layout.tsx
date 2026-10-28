@@ -1,5 +1,6 @@
+import { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { PaperProvider, Text } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -9,7 +10,13 @@ import { isSupabaseConfigured } from '../src/lib/supabase';
 import { colors, paperTheme } from '../src/theme';
 
 function RootNav() {
-  const { session, loading } = useAuth();
+  const { session, loading, recovery } = useAuth();
+  const router = useRouter();
+
+  // Opening a password-reset link signs the user in briefly; send them to set a new password.
+  useEffect(() => {
+    if (recovery && session) router.replace('/account');
+  }, [recovery, session, router]);
 
   if (!isSupabaseConfigured) {
     return (

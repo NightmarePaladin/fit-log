@@ -43,3 +43,5 @@ yarn-error.*
 .env
 
 .claude/settings.local.json
+
+.env.local.bak

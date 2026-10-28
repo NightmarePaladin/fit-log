@@ -20,16 +20,40 @@ type AuthState = {
   unit: Unit;
   setUnit: (unit: Unit) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
+  signInWithPassword: (email: string, password: string) => Promise<void>;
+  /** 'signed_in' when confirmation is off; 'confirm_email' when a confirmation link was emailed. */
+  signUpWithPassword: (name: string, email: string, password: string) => Promise<'signed_in' | 'confirm_email'>;
+  resendConfirmation: (email: string) => Promise<void>;
+  sendPasswordReset: (email: string) => Promise<void>;
+  /** true after the user opens a password-reset link, until they set a new password */
+  recovery: boolean;
+  updatePassword: (password: string) => Promise<void>;
   signOut: () => Promise<void>;
   updateProfile: (displayName: string) => Promise<void>;
   deleteAccount: () => Promise<void>;
 };
+
+/** Where Supabase email links (confirm / reset) and OAuth send the user back to. */
+const authRedirect = () => (Platform.OS === 'web' ? window.location.origin : Linking.createURL('auth/callback'));
+
+/** Turn Supabase auth errors into messages a person can act on. */
+export function friendlyAuthError(e: unknown): string {
+  const msg = e instanceof Error ? e.message : String(e);
+  const m = msg.toLowerCase();
+  if (m.includes('invalid login credentials')) return 'Email or password is incorrect.';
+  if (m.includes('email not confirmed')) return 'Please confirm your email first. Check your inbox for the link.';
+  if (m.includes('rate limit') || m.includes('too many')) return 'Too many attempts. Please wait a few minutes and try again.';
+  if (m.includes('password should be at least') || m.includes('weak')) return 'That password is too weak. Use at least 8 characters.';
+  if (m.includes('network') || m.includes('fetch')) return 'Could not reach the server. Check your connection and try again.';
+  return msg;
+}
 
 const AuthContext = createContext<AuthState | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [recovery, setRecovery] = useState(false);
   // Tagged with the user id so a stale name from a previous account is never shown.
   const [profile, setProfile] = useState<{ id: string; name: string | null; unit: Unit } | null>(null);
   const userId = session?.user.id;
@@ -43,7 +67,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(data.session);
       setLoading(false);
     });
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => setSession(next));
+    const { data: sub } = supabase.auth.onAuthStateChange((event, next) => {
+      setSession(next);
+      if (event === 'PASSWORD_RECOVERY') setRecovery(true);
+      if (event === 'SIGNED_OUT') setRecovery(false);
+    });
     return () => sub.subscription.unsubscribe();
   }, []);
 
@@ -70,12 +98,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Full-page redirect to Google and back; supabase-js exchanges the ?code= on load.
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo: window.location.origin },
+        options: { redirectTo: authRedirect() },
       });
       if (error) throw error;
       return;
     }
-    const redirectTo = Linking.createURL('auth/callback'); // fitlog://auth/callback in a dev/prod build
+    const redirectTo = authRedirect(); // fitlog://auth/callback in a dev/prod build
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo, skipBrowserRedirect: true },
@@ -91,7 +119,52 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const code = url.searchParams.get('code');
     if (!code) throw new Error('Sign-in did not return an authorization code');
     const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-    if (exchangeError) throw exchangeError;
+    if (exchangeError) {
+      // The /auth/callback route may have exchanged the same one-time code first; that's fine.
+      const { data: existing } = await supabase.auth.getSession();
+      if (!existing.session) throw exchangeError;
+    }
+  }, []);
+
+  const signInWithPassword = useCallback(async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+    if (error) throw error;
+  }, []);
+
+  const signUpWithPassword = useCallback(async (name: string, email: string, password: string) => {
+    const { data, error } = await supabase.auth.signUp({
+      email: email.trim(),
+      password,
+      options: { data: { full_name: name.trim() }, emailRedirectTo: authRedirect() },
+    });
+    if (error) throw error;
+    // With email-enumeration protection, an already-registered address returns a user with no identities.
+    if (data.user && data.user.identities?.length === 0) {
+      throw new Error(
+        'An account with this email already exists. Sign in instead, or use Continue with Google if you signed up with Google.',
+      );
+    }
+    return data.session ? 'signed_in' : 'confirm_email';
+  }, []);
+
+  const resendConfirmation = useCallback(async (email: string) => {
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email: email.trim(),
+      options: { emailRedirectTo: authRedirect() },
+    });
+    if (error) throw error;
+  }, []);
+
+  const sendPasswordReset = useCallback(async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: authRedirect() });
+    if (error) throw error;
+  }, []);
+
+  const updatePassword = useCallback(async (password: string) => {
+    const { error } = await supabase.auth.updateUser({ password });
+    if (error) throw error;
+    setRecovery(false);
   }, []);
 
   const signOut = useCallback(async () => {
@@ -147,12 +220,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       avatarUrl: (meta.avatar_url as string | undefined) ?? null,
       unit,
       signInWithGoogle,
+      signInWithPassword,
+      signUpWithPassword,
+      resendConfirmation,
+      sendPasswordReset,
+      recovery,
+      updatePassword,
       signOut,
       updateProfile,
       setUnit,
       deleteAccount,
     };
-  }, [session, loading, profileName, unit, signInWithGoogle, signOut, updateProfile, setUnit, deleteAccount]);
+  }, [
+    session, loading, profileName, unit, recovery,
+    signInWithGoogle, signInWithPassword, signUpWithPassword, resendConfirmation, sendPasswordReset,
+    updatePassword, signOut, updateProfile, setUnit, deleteAccount,
+  ]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

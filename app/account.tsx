@@ -3,14 +3,42 @@ import { Image, ScrollView, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Button, Dialog, IconButton, Portal, Text, TextInput } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useAuth } from '../src/auth/AuthProvider';
+import { friendlyAuthError, useAuth } from '../src/auth/AuthProvider';
+import { passwordProblem } from '../src/lib/validation';
 import { Card, SectionTitle } from '../src/components/ui';
 import { colors } from '../src/theme';
 
 export default function Account() {
   const router = useRouter();
-  const { session, fullName, avatarUrl, updateProfile, deleteAccount } = useAuth();
+  const { session, fullName, avatarUrl, updateProfile, deleteAccount, recovery, updatePassword } = useAuth();
   const [name, setName] = useState(fullName);
+
+  // Password section: only for email/password accounts (Google accounts have no password here).
+  const [newPw, setNewPw] = useState('');
+  const [newPw2, setNewPw2] = useState('');
+  const [pwBusy, setPwBusy] = useState(false);
+  const [pwMessage, setPwMessage] = useState<{ ok: boolean; text: string } | null>(null);
+  const hasPassword = (session?.user.app_metadata?.providers as string[] | undefined)?.includes('email') ?? false;
+
+  const savePassword = async () => {
+    const problem = passwordProblem(newPw) ?? (newPw !== newPw2 ? 'Passwords do not match.' : null);
+    if (problem) {
+      setPwMessage({ ok: false, text: problem });
+      return;
+    }
+    setPwBusy(true);
+    setPwMessage(null);
+    try {
+      await updatePassword(newPw);
+      setNewPw('');
+      setNewPw2('');
+      setPwMessage({ ok: true, text: 'Password updated' });
+    } catch (e) {
+      setPwMessage({ ok: false, text: friendlyAuthError(e) });
+    } finally {
+      setPwBusy(false);
+    }
+  };
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
 
@@ -83,7 +111,7 @@ export default function Account() {
           />
           <TextInput mode="outlined" label="Email" value={session?.user.email ?? ''} editable={false} />
           <Text style={{ color: colors.muted, fontSize: 12 }}>
-            Email comes from your {provider === 'google' ? 'Google' : provider} sign-in and can’t be changed here.
+            Email is your sign-in{provider === 'google' ? ' from Google' : ''} and can’t be changed here.
             {created ? ` Member since ${created.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}.` : ''}
           </Text>
           {message && <Text style={{ color: message.ok ? colors.success : colors.danger }}>{message.text}</Text>}
@@ -97,6 +125,24 @@ export default function Account() {
             Save changes
           </Button>
         </Card>
+
+        {(hasPassword || recovery) && (
+          <>
+            <SectionTitle>{recovery ? 'Set a new password' : 'Password'}</SectionTitle>
+            <Card style={{ gap: 12 }}>
+              {recovery && (
+                <Text style={{ color: colors.gold }}>You opened a password reset link. Choose a new password to finish.</Text>
+              )}
+              <TextInput mode="outlined" label="New password" value={newPw} onChangeText={setNewPw} secureTextEntry autoCapitalize="none" autoComplete="new-password" />
+              <TextInput mode="outlined" label="Confirm new password" value={newPw2} onChangeText={setNewPw2} secureTextEntry autoCapitalize="none" autoComplete="new-password" />
+              <Text style={{ color: colors.muted, fontSize: 12 }}>At least 8 characters, with letters and numbers.</Text>
+              {pwMessage && <Text style={{ color: pwMessage.ok ? colors.success : colors.danger }}>{pwMessage.text}</Text>}
+              <Button mode="contained" loading={pwBusy} disabled={pwBusy || !newPw} onPress={savePassword} contentStyle={{ height: 48 }}>
+                Update password
+              </Button>
+            </Card>
+          </>
+        )}
 
         <SectionTitle>Danger zone</SectionTitle>
         <Card style={{ gap: 10, borderColor: colors.danger }}>

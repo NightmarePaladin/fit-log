@@ -37,6 +37,14 @@ Optional demo data: `supabase/seed/demo_workouts.sql` creates ~4 weeks of workou
 3. **Supabase** → Authentication → URL Configuration → *Redirect URLs*: add `fitlog://auth/callback` (and `exp://**` if you ever use Expo Go; not recommended).
 4. The app scheme is `fitlog` (`app.json`). The redirect URI is built with `Linking.createURL('auth/callback')`.
 
+## Email + password accounts
+The login screen has **Sign in / Create account** tabs (email + password, name on registration) alongside Google. Passwords need 8+ characters with letters and numbers; **Forgot password?** emails a reset link, and email users can change their password on the Account page.
+
+Supabase setting that matters — Authentication → Sign In / Providers → Email:
+- **Confirm email ON** (the default): new users must click an emailed link before signing in. Supabase's built-in email sender is heavily rate-limited and may only deliver to your own team's addresses, so for anyone else set up custom SMTP (Authentication → SMTP).
+- **Confirm email OFF**: sign-up signs the user in immediately. Simplest for a class demo.
+- Add every URL the links return to under Authentication → URL Configuration → Redirect URLs: `fitlog://auth/callback` (Android) and `http://localhost:8081` (web), plus your deployed web URL if any.
+
 ## Units (lb / kg)
 Settings → Weight unit switches between pounds and kilograms. Weights are always **stored in pounds** (`workout_sets.weight`, numeric(9,4)); the app converts for display and for what you type, so switching never alters saved data and a typed kg value round-trips exactly. The preference is saved in `profiles.unit` (migration `0006_units.sql`). An unfinished workout's typed weights are converted when you switch.
 

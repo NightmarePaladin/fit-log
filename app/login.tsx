@@ -1,62 +1,247 @@
 import { useState } from 'react';
-import { View } from 'react-native';
-import { Button, Text } from 'react-native-paper';
+import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
+import { Button, SegmentedButtons, Text, TextInput } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useAuth } from '../src/auth/AuthProvider';
+import { friendlyAuthError, useAuth } from '../src/auth/AuthProvider';
+import { isValidEmail, signUpProblem } from '../src/lib/validation';
 import { colors } from '../src/theme';
 
-export default function Login() {
-  const { signInWithGoogle } = useAuth();
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+type Mode = 'signin' | 'signup';
 
-  const onPress = async () => {
-    setBusy(true);
+export default function Login() {
+  const { signInWithGoogle, signInWithPassword, signUpWithPassword, resendConfirmation, sendPasswordReset } = useAuth();
+  const [mode, setMode] = useState<Mode>('signin');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [showPw, setShowPw] = useState(false);
+  const [busy, setBusy] = useState<null | 'password' | 'google' | 'reset' | 'resend'>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
+  /** email address awaiting confirmation (shows the "check your inbox" panel) */
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
+  const [needsConfirm, setNeedsConfirm] = useState(false);
+
+  const reset = () => {
     setError(null);
+    setInfo(null);
+    setNeedsConfirm(false);
+  };
+
+  const switchMode = (next: string) => {
+    setMode(next as Mode);
+    reset();
+    setConfirm('');
+  };
+
+  const run = async (kind: NonNullable<typeof busy>, fn: () => Promise<void>) => {
+    setBusy(kind);
+    reset();
     try {
-      await signInWithGoogle();
+      await fn();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Sign-in failed. Please try again.');
+      const msg = friendlyAuthError(e);
+      setError(msg);
+      if (msg.startsWith('Please confirm your email')) setNeedsConfirm(true);
     } finally {
-      setBusy(false);
+      setBusy(null);
     }
   };
 
-  return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg, padding: 24, justifyContent: 'space-between' }}>
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', gap: 16 }}>
-        <View
-          style={{
-            width: 96, height: 96, borderRadius: 28, backgroundColor: colors.accent,
-            alignItems: 'center', justifyContent: 'center',
-          }}
-        >
-          <MaterialCommunityIcons name="dumbbell" size={52} color="#fff" />
+  const submit = () =>
+    run('password', async () => {
+      if (mode === 'signin') {
+        if (!isValidEmail(email)) throw new Error('Enter a valid email address.');
+        if (!password) throw new Error('Enter your password.');
+        await signInWithPassword(email, password); // success: the route guard moves to the app
+        return;
+      }
+      const problem = signUpProblem({ name, email, password, confirm });
+      if (problem) throw new Error(problem);
+      const result = await signUpWithPassword(name, email, password);
+      if (result === 'confirm_email') setPendingEmail(email.trim());
+    });
+
+  const forgot = () =>
+    run('reset', async () => {
+      if (!isValidEmail(email)) throw new Error('Enter your email above first, then tap Forgot password.');
+      await sendPasswordReset(email);
+      setInfo('If an account exists for that email, a reset link is on its way.');
+    });
+
+  const resend = (address: string) =>
+    run('resend', async () => {
+      await resendConfirmation(address);
+      setInfo('Confirmation email sent again.');
+    });
+
+  const google = () => run('google', signInWithGoogle);
+
+  const header = (
+    <View style={{ alignItems: 'center', gap: 10, marginBottom: 20 }}>
+      <View
+        style={{
+          width: 80, height: 80, borderRadius: 24, backgroundColor: colors.accent,
+          alignItems: 'center', justifyContent: 'center',
+        }}
+      >
+        <MaterialCommunityIcons name="dumbbell" size={44} color="#fff" />
+      </View>
+      <Text variant="headlineMedium" style={{ fontWeight: '800' }}>FitLog</Text>
+      <Text style={{ color: colors.muted, textAlign: 'center' }}>
+        Log lifts fast. See last time&apos;s numbers.
+      </Text>
+    </View>
+  );
+
+  if (pendingEmail) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg, padding: 24, justifyContent: 'center' }}>
+        {header}
+        <View style={{ gap: 12, alignItems: 'center' }}>
+          <MaterialCommunityIcons name="email-check-outline" size={48} color={colors.success} />
+          <Text variant="titleLarge" style={{ fontWeight: '800' }}>Check your email</Text>
+          <Text style={{ color: colors.muted, textAlign: 'center' }}>
+            We sent a confirmation link to {pendingEmail}. Open it, then come back and sign in.
+          </Text>
+          {error && <Text style={{ color: colors.danger, textAlign: 'center' }}>{error}</Text>}
+          {info && <Text style={{ color: colors.success, textAlign: 'center' }}>{info}</Text>}
+          <Button mode="outlined" loading={busy === 'resend'} disabled={busy !== null} onPress={() => resend(pendingEmail)}>
+            Resend email
+          </Button>
+          <Button
+            onPress={() => {
+              setPendingEmail(null);
+              setMode('signin');
+              reset();
+            }}
+          >
+            Back to sign in
+          </Button>
         </View>
-        <Text variant="displaySmall" style={{ fontWeight: '800' }}>FitLog</Text>
-        <Text style={{ color: colors.muted, textAlign: 'center', fontSize: 16 }}>
-          Log lifts fast. See last time&apos;s numbers.{'\n'}Watch your strength climb week over week.
-        </Text>
-      </View>
-      <View style={{ gap: 12 }}>
-        {error && <Text style={{ color: colors.danger, textAlign: 'center' }}>{error}</Text>}
-        <Button
-          mode="contained"
-          icon="google"
-          loading={busy}
-          disabled={busy}
-          onPress={onPress}
-          contentStyle={{ height: 56 }}
-          labelStyle={{ fontSize: 17, fontWeight: '700' }}
-          style={{ borderRadius: 16 }}
-        >
-          Continue with Google
-        </Button>
-        <Text style={{ color: colors.muted, textAlign: 'center', fontSize: 12 }}>
-          Your workouts are private to your account.
-        </Text>
-      </View>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 24, justifyContent: 'center' }} keyboardShouldPersistTaps="handled">
+          {header}
+
+          <SegmentedButtons
+            value={mode}
+            onValueChange={switchMode}
+            buttons={[
+              { value: 'signin', label: 'Sign in' },
+              { value: 'signup', label: 'Create account' },
+            ]}
+            style={{ marginBottom: 16 }}
+          />
+
+          <View style={{ gap: 12 }}>
+            {mode === 'signup' && (
+              <TextInput
+                mode="outlined"
+                label="Name"
+                value={name}
+                onChangeText={setName}
+                autoCapitalize="words"
+                autoComplete="name"
+                maxLength={60}
+              />
+            )}
+            <TextInput
+              mode="outlined"
+              label="Email"
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="email-address"
+              autoComplete="email"
+            />
+            <TextInput
+              mode="outlined"
+              label="Password"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={!showPw}
+              autoCapitalize="none"
+              autoCorrect={false}
+              autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
+              right={<TextInput.Icon icon={showPw ? 'eye-off' : 'eye'} onPress={() => setShowPw((v) => !v)} />}
+              onSubmitEditing={mode === 'signin' ? submit : undefined}
+            />
+            {mode === 'signup' && (
+              <>
+                <TextInput
+                  mode="outlined"
+                  label="Confirm password"
+                  value={confirm}
+                  onChangeText={setConfirm}
+                  secureTextEntry={!showPw}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  autoComplete="new-password"
+                  onSubmitEditing={submit}
+                />
+                <Text style={{ color: colors.muted, fontSize: 12 }}>At least 8 characters, with letters and numbers.</Text>
+              </>
+            )}
+
+            {error && <Text style={{ color: colors.danger }}>{error}</Text>}
+            {info && <Text style={{ color: colors.success }}>{info}</Text>}
+            {needsConfirm && (
+              <Button compact loading={busy === 'resend'} disabled={busy !== null} onPress={() => resend(email)}>
+                Resend confirmation email
+              </Button>
+            )}
+
+            <Button
+              mode="contained"
+              loading={busy === 'password'}
+              disabled={busy !== null}
+              onPress={submit}
+              contentStyle={{ height: 52 }}
+              labelStyle={{ fontSize: 16, fontWeight: '800' }}
+              style={{ borderRadius: 14 }}
+            >
+              {mode === 'signin' ? 'Sign in' : 'Create account'}
+            </Button>
+
+            {mode === 'signin' && (
+              <Button compact loading={busy === 'reset'} disabled={busy !== null} onPress={forgot}>
+                Forgot password?
+              </Button>
+            )}
+          </View>
+
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginVertical: 18 }}>
+            <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
+            <Text style={{ color: colors.muted }}>or</Text>
+            <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
+          </View>
+
+          <Button
+            mode="outlined"
+            icon="google"
+            loading={busy === 'google'}
+            disabled={busy !== null}
+            onPress={google}
+            contentStyle={{ height: 52 }}
+            labelStyle={{ fontSize: 16, fontWeight: '700' }}
+            style={{ borderRadius: 14 }}
+          >
+            Continue with Google
+          </Button>
+          <Text style={{ color: colors.muted, textAlign: 'center', fontSize: 12, marginTop: 14 }}>
+            Your workouts are private to your account.
+          </Text>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
