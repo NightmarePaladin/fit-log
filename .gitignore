@@ -45,3 +45,6 @@ yarn-error.*
 .claude/settings.local.json
 
 .env.local.bak
+.vercel
+.env*
+!.env.example
