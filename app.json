@@ -16,7 +16,10 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "runtimeVersion": {
+        "policy": "appVersion"
+      }
     },
     "web": {
       "bundler": "metro",
@@ -46,6 +49,10 @@
         "projectId": "277d8e44-7714-4bf0-a699-b83bc3675386"
       }
     },
-    "owner": "paladins"
+    "owner": "paladins",
+    "updates": {
+      "url": "https://u.expo.dev/277d8e44-7714-4bf0-a699-b83bc3675386"
+    },
+    "ios": {}
   }
 }
