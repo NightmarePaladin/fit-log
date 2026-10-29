@@ -53,6 +53,8 @@ function RootNav() {
         <Stack.Screen name="settings" />
         <Stack.Screen name="buddies" />
         <Stack.Screen name="buddy/[id]" />
+        <Stack.Screen name="walt/index" />
+        <Stack.Screen name="walt/[id]" />
       </Stack.Protected>
       <Stack.Protected guard={!session && !isGuest}>
         <Stack.Screen name="login" />

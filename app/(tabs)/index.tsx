@@ -83,6 +83,16 @@ export default function Dashboard() {
         >
           {hasDraft ? 'Resume workout' : 'Start workout'}
         </Button>
+        <Button
+          mode="outlined"
+          icon="arm-flex"
+          onPress={() => router.push('/walt')}
+          contentStyle={{ height: 48 }}
+          style={{ borderRadius: 16, borderColor: colors.accent }}
+          accessibilityLabel="W.A.L.T. group workout"
+        >
+          W.A.L.T. · We All Lift Together
+        </Button>
         {hasDraft && (
           <Text style={{ color: colors.gold, textAlign: 'center', marginTop: -6 }}>
             You have an unfinished workout ({draft!.exercises.length} exercise{draft!.exercises.length === 1 ? '' : 's'})

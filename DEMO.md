@@ -29,7 +29,7 @@ Covers the 10 Definition-of-Done steps in order. Present from the Android device
 
 **Bonus: offline (great for the "gyms have bad signal" story).** Turn on airplane mode, finish a workout, and show the blue **Saved on this device** banner and the **Not uploaded** tag in History. Turn airplane mode off: it uploads by itself and the tag disappears. For the no-account version: sign out, tap **Access while offline**, log a workout, then sign in and show the **Upload your offline workouts?** prompt.
 
-**Bonus: sharing.** On a finished workout tap **Share, export or send to a buddy**: show the picture card, share it (or *Create private link* and open it on another device with no account), and *Export as plan (Excel)*. On History tap **Export history (Excel)**. Then **Buddies**: create an invite code on one account, enter it on a second account, and show each other's lifts.
+**Bonus: sharing.** On a finished workout tap **Share, export or send to a buddy**: show the picture card, share it (or *Create private link* and open it on another device with no account), and *Export as plan (Excel)*. On History tap **Export history (Excel)**. Then **Buddies**: create an invite code on one account, enter it on a second account, and show each other's lifts. **W.A.L.T.** (Dashboard): start a session on one account, join with the code on another, add an exercise, and watch each other's sets appear live; each person taps *Finish & save my workout* to save their own.
 
 Optional extras if time allows: Settings → switch to **kg** (all screens convert; saved data is unchanged); Account page → edit your name.
 
