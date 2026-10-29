@@ -43,6 +43,17 @@ export async function createExercise(
   return data as Exercise;
 }
 
+/** Delete one of the user's custom exercises. Fails (code 23503) if any saved workout still uses it. */
+export async function deleteExercise(id: string, userId: string): Promise<void> {
+  const { error } = await supabase.from('exercises').delete().eq('id', id).eq('user_id', userId).eq('is_custom', true);
+  if (error) {
+    if (error.code === '23503') {
+      throw Object.assign(new Error('This exercise is in your workout history, so it can’t be deleted. Delete those workouts first.'), { code: '23503' });
+    }
+    throw error;
+  }
+}
+
 export async function findCustomExerciseByName(userId: string, name: string): Promise<Exercise | null> {
   const { data, error } = await supabase
     .from('exercises')

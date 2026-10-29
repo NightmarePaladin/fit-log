@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { FlatList, Modal, Pressable, View } from 'react-native';
-import { ActivityIndicator, Button, SegmentedButtons, Text, TextInput } from 'react-native-paper';
+import { ActivityIndicator, Button, IconButton, SegmentedButtons, Text, TextInput } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../auth/AuthProvider';
-import { createCustomExercise, loadExercises } from '../lib/exercises';
+import { showDialog } from '../lib/dialog';
+import { createCustomExercise, deleteCustomExercise, loadExercises } from '../lib/exercises';
 import { colors, useScheme } from '../theme';
 import type { Exercise } from '../types';
 
@@ -76,6 +77,24 @@ function PickerBody({ onClose, onPick }: Omit<Props, 'visible'>) {
     }
   };
 
+  const confirmDelete = (ex: Exercise) =>
+    showDialog(`Delete “${ex.name}”?`, 'This removes it from your exercise list. It can’t be undone.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          setError(null);
+          try {
+            await deleteCustomExercise(ex, userId);
+            setAll((list) => list.filter((e) => e.id !== ex.id));
+          } catch (e) {
+            setError(e instanceof Error ? e.message : 'Could not delete exercise');
+          }
+        },
+      },
+    ]);
+
   return (
     <>
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
@@ -146,17 +165,28 @@ function PickerBody({ onClose, onPick }: Omit<Props, 'visible'>) {
             keyExtractor={(e) => e.id}
             keyboardShouldPersistTaps="handled"
             renderItem={({ item }) => (
-              <Pressable
-                onPress={() => onPick(item)}
-                android_ripple={{ color: colors.cardAlt }}
-                style={{ paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: colors.border }}
-              >
-                <Text style={{ fontSize: 17, fontWeight: '600' }}>{item.name}</Text>
-                <Text style={{ color: colors.muted, fontSize: 13 }}>
-                  {item.is_custom ? 'Custom' : item.muscle_group}
-                  {item.timed ? '  ·  Timed' : item.reps_only ? '  ·  Reps only' : ''}
-                </Text>
-              </Pressable>
+              <View style={{ flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: colors.border }}>
+                <Pressable
+                  onPress={() => onPick(item)}
+                  android_ripple={{ color: colors.cardAlt }}
+                  style={{ flex: 1, paddingLeft: 20, paddingRight: 8, paddingVertical: 14 }}
+                >
+                  <Text style={{ fontSize: 17, fontWeight: '600' }}>{item.name}</Text>
+                  <Text style={{ color: colors.muted, fontSize: 13 }}>
+                    {item.is_custom ? 'Custom' : item.muscle_group}
+                    {item.timed ? '  ·  Timed' : item.reps_only ? '  ·  Reps only' : ''}
+                  </Text>
+                </Pressable>
+                {item.is_custom && (
+                  <IconButton
+                    icon="delete-outline"
+                    iconColor={colors.danger}
+                    onPress={() => confirmDelete(item)}
+                    accessibilityLabel={`Delete ${item.name}`}
+                    style={{ marginRight: 8 }}
+                  />
+                )}
+              </View>
             )}
             ListEmptyComponent={
               <View style={{ alignItems: 'center', padding: 24, gap: 8 }}>
