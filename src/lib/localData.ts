@@ -7,7 +7,7 @@ const num = (s: string) => {
   return Number.isFinite(n) && n >= 0 ? n : 0;
 };
 
-/** Turn the typed draft (weights in the display unit) into a phone-stored workout (weights in lb). */
+/** Turn the typed draft (weights in the display unit) into a device-stored workout (weights in lb). */
 export function draftToLocal(draft: Draft, unit: Unit, id: string, ownerId: string | null): LocalWorkout {
   const exercises = draft.exercises
     .map((ex) => ({
@@ -30,7 +30,7 @@ export function draftToLocal(draft: Draft, unit: Unit, id: string, ownerId: stri
   };
 }
 
-/** Shape a phone-stored workout like a server row so History, Progress and Last Workout can use it. */
+/** Shape a device-stored workout like a server row so History, Progress and Last Workout can use it. */
 export function localToRow(w: LocalWorkout): WorkoutRow {
   return {
     id: w.id,
@@ -57,14 +57,14 @@ export function localToRow(w: LocalWorkout): WorkoutRow {
 }
 
 /**
- * Which phone-stored items a viewer may see: a signed-in user sees only their own;
- * offline (no account) mode shows everything waiting on this phone.
+ * Which device-stored items a viewer may see: a signed-in user sees only their own;
+ * offline (no account) mode shows everything waiting on this device.
  */
 export function visibleTo<T extends { ownerId: string | null }>(items: T[], userId: string | null): T[] {
   return userId ? items.filter((i) => i.ownerId === userId) : items;
 }
 
-/** Server rows plus phone-stored workouts, newest first. A phone copy replaces the server copy with the same id. */
+/** Server rows plus device-stored workouts, newest first. A device copy replaces the server copy with the same id. */
 export function mergeWorkouts(server: WorkoutRow[], pending: LocalWorkout[]): WorkoutRow[] {
   const pendingIds = new Set(pending.map((p) => p.id));
   return [...pending.map(localToRow), ...server.filter((w) => !pendingIds.has(w.id))].sort(

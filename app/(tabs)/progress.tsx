@@ -10,7 +10,7 @@ import { useWorkouts } from '../../src/hooks/useWorkouts';
 import { addWeeks, formatDay, startOfWeek } from '../../src/lib/dates';
 import { exerciseNames, exerciseRepsOnly, flattenWorkouts } from '../../src/lib/history';
 import { compareWeeks, detectPRs, fmtNum, fmtPct, weeklySeries } from '../../src/lib/stats';
-import { colors } from '../../src/theme';
+import { colors, useScheme } from '../../src/theme';
 
 function Delta({ value, suffix = '' }: { value: number | null; suffix?: string }) {
   if (value == null) return <Text style={{ color: colors.muted, fontWeight: '800' }}>—</Text>;
@@ -37,6 +37,7 @@ function Pair({ label, prev, cur, unit, fmt = fmtNum }: { label: string; prev: n
 }
 
 export default function Progress() {
+  useScheme(); // re-render when the appearance changes
   const { workouts, loading, error, refresh } = useWorkouts();
   const { width } = useWindowDimensions();
   const u = useUnits();

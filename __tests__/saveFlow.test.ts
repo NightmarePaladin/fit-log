@@ -38,7 +38,7 @@ beforeEach(async () => {
 });
 
 describe('finishWorkout', () => {
-  it('online + signed in: uploads with the phone-generated id and keeps nothing waiting', async () => {
+  it('online + signed in: uploads with the device-generated id and keeps nothing waiting', async () => {
     upload.mockResolvedValue('ok');
     const r = await finishWorkout(draft, 'lb', 'u1');
     expect(r.status).toBe('synced');
@@ -47,7 +47,7 @@ describe('finishWorkout', () => {
     expect(useLocalStore.getState().workouts).toHaveLength(0);
   });
 
-  it('no connection: saves on the phone and reports queued (nothing lost)', async () => {
+  it('no connection: saves on the device and reports queued (nothing lost)', async () => {
     upload.mockRejectedValue(new TypeError('Network request failed'));
     const r = await finishWorkout(draft, 'lb', 'u1');
     expect(r.status).toBe('queued');
@@ -61,7 +61,7 @@ describe('finishWorkout', () => {
     expect(upload).not.toHaveBeenCalled();
   });
 
-  it('guest (no account): always saves on the phone, owner null', async () => {
+  it('guest (no account): always saves on the device, owner null', async () => {
     const r = await finishWorkout(draft, 'lb', null);
     expect(r.status).toBe('queued');
     expect(upload).not.toHaveBeenCalled();
@@ -135,7 +135,7 @@ describe('uploadPending', () => {
     expect(upload).not.toHaveBeenCalled();
   });
 
-  it('uploads offline-made custom exercises first, using their phone-generated ids', async () => {
+  it('uploads offline-made custom exercises first, using their device-generated ids', async () => {
     useLocalStore.getState().addCustomExercise({ id: 'cx', name: 'Cable Fly', muscle_group: null, user_id: 'u1', is_custom: true, ownerId: 'u1' });
     createEx.mockResolvedValue({});
     await uploadPending('u1');

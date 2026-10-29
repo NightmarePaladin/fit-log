@@ -10,12 +10,14 @@ import { showDialog } from '../src/lib/dialog';
 import { visibleTo } from '../src/lib/localData';
 import { useDraftStore } from '../src/store/draft';
 import { GUEST, useLocalStore } from '../src/store/local';
-import { colors } from '../src/theme';
+import { colors, useScheme } from '../src/theme';
 
 export default function Settings() {
+  useScheme(); // re-render when the appearance changes
   const router = useRouter();
   const { session, isGuest, exitOfflineMode, signOut, unit, setUnit } = useAuth();
   const waiting = useLocalStore((s) => visibleTo(s.workouts, session?.user.id ?? null).length);
+  const themeMode = useLocalStore((s) => s.themeMode);
   const [unitBusy, setUnitBusy] = useState(false);
   const [unitError, setUnitError] = useState<string | null>(null);
 
@@ -55,7 +57,7 @@ export default function Settings() {
     waiting > 0
       ? showDialog(
           'Sign out with workouts waiting?',
-          `${waiting} workout${waiting === 1 ? ' is' : 's are'} saved on this phone and not uploaded yet. They stay on this phone and upload when you sign in again.`,
+          `${waiting} workout${waiting === 1 ? ' is' : 's are'} saved on this device and not uploaded yet. They stay on this device and upload when you sign in again.`,
           [
             { text: 'Cancel', style: 'cancel' },
             { text: 'Sign out', style: 'destructive', onPress: doSignOut },
@@ -71,6 +73,24 @@ export default function Settings() {
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 40 }}>
+        <SectionTitle>Appearance</SectionTitle>
+        <Card style={{ gap: 10 }}>
+          <SegmentedButtons
+            value={themeMode}
+            onValueChange={(v) => {
+              if (v === 'dark' || v === 'light' || v === 'system') useLocalStore.getState().setThemeMode(v);
+            }}
+            buttons={[
+              { value: 'dark', label: 'Dark', icon: 'weather-night' },
+              { value: 'light', label: 'Light', icon: 'white-balance-sunny' },
+              { value: 'system', label: 'System', icon: 'cellphone' },
+            ]}
+          />
+          <Text style={{ color: colors.muted, fontSize: 12 }}>
+            {themeMode === 'system' ? 'Follows your device’s light or dark setting.' : 'Choose how Fit Lift looks.'}
+          </Text>
+        </Card>
+
         <SectionTitle>Preferences</SectionTitle>
         <Card style={{ paddingVertical: 4 }}>
           <List.Item
@@ -99,6 +119,13 @@ export default function Settings() {
 
         <SectionTitle>Account</SectionTitle>
         <Card style={{ paddingVertical: 4 }}>
+          <List.Item
+            title="Buddies"
+            description="Share your lifts with a gym buddy"
+            left={(p) => <List.Icon {...p} icon="account-group" />}
+            right={(p) => <List.Icon {...p} icon="chevron-right" />}
+            onPress={() => router.push('/buddies')}
+          />
           {isGuest ? (
             <List.Item
               title="Sign in to upload"
@@ -127,7 +154,7 @@ export default function Settings() {
           </Text>
           <Text style={{ color: colors.muted }}>
             {waiting > 0
-              ? `${waiting} finished workout${waiting === 1 ? '' : 's'} saved on this phone and waiting to upload.`
+              ? `${waiting} finished workout${waiting === 1 ? '' : 's'} saved on this device and waiting to upload.`
               : 'All finished workouts are uploaded.'}
           </Text>
           <Button icon="delete-sweep" disabled={!draft || !ownsDraft} onPress={clearDraft}>

@@ -72,7 +72,7 @@ export type WorkoutRow = {
   completed_at: string | null;
   status: 'in_progress' | 'completed';
   workout_exercises: WorkoutExerciseRow[];
-  /** true for workouts saved on this phone that are not uploaded yet */
+  /** true for workouts saved on this device that are not uploaded yet */
   pending?: boolean;
 };
 
@@ -82,8 +82,8 @@ export type LocalSet = { weight: number; reps: number; completed: boolean };
 export type LocalWorkoutExercise = { exerciseId: string; name: string; sets: LocalSet[]; repsOnly?: boolean };
 
 /**
- * A workout saved on this phone that has not been uploaded yet.
- * `id` is generated on the phone and reused as the database id, so uploading is safe to repeat.
+ * A workout saved on this device that has not been uploaded yet.
+ * `id` is generated on the device and reused as the database id, so uploading is safe to repeat.
  * ownerId is null for workouts made in offline (guest) mode.
  */
 export type LocalWorkout = {

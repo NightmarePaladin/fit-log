@@ -6,7 +6,7 @@ import { useOnline } from '../hooks/useOnline';
 import { showDialog } from '../lib/dialog';
 import { uploadPending } from '../lib/saveFlow';
 import { useLocalStore } from '../store/local';
-import { colors } from '../theme';
+import { colors, useScheme } from '../theme';
 
 /**
  * Invisible while idle. When signed in and online it:
@@ -14,6 +14,7 @@ import { colors } from '../theme';
  *  - asks before uploading workouts made in offline mode (no account) to this account.
  */
 export function SyncGate() {
+  useScheme(); // re-render when the appearance changes
   const { session } = useAuth();
   const userId = session?.user.id ?? null;
   const online = useOnline();
@@ -58,11 +59,11 @@ export function SyncGate() {
       const r = await uploadPending(userId);
       setMessage(
         r.offline
-          ? 'Connection lost. Your workouts are safe on this phone and will upload automatically.'
+          ? 'Connection lost. Your workouts are safe on this device and will upload automatically.'
           : `Uploaded ${r.uploaded} workout${r.uploaded === 1 ? '' : 's'} to your account.`,
       );
     } catch (e) {
-      setMessage(e instanceof Error ? e.message : 'Upload failed. Your workouts are still on this phone.');
+      setMessage(e instanceof Error ? e.message : 'Upload failed. Your workouts are still on this device.');
     } finally {
       setBusy(false);
       setAsked(true);
@@ -70,7 +71,7 @@ export function SyncGate() {
   };
 
   const discard = () =>
-    showDialog('Delete these workouts?', `This permanently deletes the ${guestCount} workout${guestCount === 1 ? '' : 's'} saved on this phone from offline mode.`, [
+    showDialog('Delete these workouts?', `This permanently deletes the ${guestCount} workout${guestCount === 1 ? '' : 's'} saved on this device from offline mode.`, [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: () => useLocalStore.getState().discardGuest() },
     ]);
@@ -81,11 +82,11 @@ export function SyncGate() {
         <Dialog.Title>Upload your offline workouts?</Dialog.Title>
         <Dialog.Content style={{ gap: 8 }}>
           <Text>
-            You have {guestCount} workout{guestCount === 1 ? '' : 's'} saved on this phone from offline mode. Upload{' '}
+            You have {guestCount} workout{guestCount === 1 ? '' : 's'} saved on this device from offline mode. Upload{' '}
             {guestCount === 1 ? 'it' : 'them'} to {session?.user.email ?? 'your account'}?
           </Text>
           <Text style={{ color: colors.muted, fontSize: 12 }}>
-            Choose Not now to keep them on this phone and decide later.
+            Choose Not now to keep them on this device and decide later.
           </Text>
         </Dialog.Content>
         <Dialog.Actions>

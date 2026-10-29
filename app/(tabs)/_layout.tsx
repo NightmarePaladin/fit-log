@@ -1,7 +1,7 @@
 import { Tabs } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { colors } from '../../src/theme';
+import { colors, useScheme } from '../../src/theme';
 
 const icon = (name: React.ComponentProps<typeof MaterialCommunityIcons>['name']) => {
   const TabIcon = ({ color, size }: { color: unknown; size: number }) => (
@@ -12,7 +12,8 @@ const icon = (name: React.ComponentProps<typeof MaterialCommunityIcons>['name'])
 };
 
 export default function TabsLayout() {
-  // Phones with gesture navigation draw the system bar over the app; keep the tabs above it.
+  useScheme(); // re-render when the appearance changes
+  // Devices with gesture navigation draw the system bar over the app; keep the tabs above it.
   const { bottom } = useSafeAreaInsets();
   return (
     <Tabs

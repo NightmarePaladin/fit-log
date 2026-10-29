@@ -40,13 +40,13 @@ export function StatusBanner() {
 
   if (isGuest) {
     icon = 'cloud-off-outline';
-    text = `Offline mode: not signed in. ${waiting} workout${waiting === 1 ? '' : 's'} saved on this phone.`;
+    text = `Offline mode: not signed in. ${waiting} workout${waiting === 1 ? '' : 's'} saved on this device.`;
     action = { label: 'Sign in', onPress: exitOfflineMode };
   } else if (!online) {
     icon = 'wifi-off';
     text = waiting
       ? `You're offline. ${waiting} workout${waiting === 1 ? '' : 's'} will upload when you reconnect.`
-      : "You're offline. Workouts you finish are saved on this phone and uploaded later.";
+      : "You're offline. Workouts you finish are saved on this device and uploaded later.";
   } else if (waiting > 0) {
     icon = 'cloud-upload-outline';
     tint = colors.blue;

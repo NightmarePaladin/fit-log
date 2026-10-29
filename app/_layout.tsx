@@ -8,9 +8,11 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AuthProvider, useAuth } from '../src/auth/AuthProvider';
 import { SyncGate } from '../src/components/SyncGate';
 import { isSupabaseConfigured } from '../src/lib/supabase';
-import { colors, paperTheme } from '../src/theme';
+import { ThemeSync } from '../src/components/ThemeSync';
+import { colors, makePaperTheme, useScheme } from '../src/theme';
 
 function RootNav() {
+  useScheme(); // re-render when the appearance changes
   const { session, loading, recovery, isGuest } = useAuth();
   const router = useRouter();
 
@@ -48,22 +50,28 @@ function RootNav() {
         <Stack.Screen name="workout/[id]" />
         <Stack.Screen name="account" />
         <Stack.Screen name="settings" />
+        <Stack.Screen name="buddies" />
+        <Stack.Screen name="buddy/[id]" />
       </Stack.Protected>
       <Stack.Protected guard={!session && !isGuest}>
         <Stack.Screen name="login" />
       </Stack.Protected>
       <Stack.Screen name="auth/callback" />
+      {/* Public: anyone with a share link can open it without an account. */}
+      <Stack.Screen name="s/[token]" />
     </Stack>
   );
 }
 
 export default function RootLayout() {
+  const scheme = useScheme();
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.bg }}>
       <SafeAreaProvider>
-        <PaperProvider theme={paperTheme}>
+        <PaperProvider theme={makePaperTheme(scheme)}>
+          <ThemeSync />
           <AuthProvider>
-            <StatusBar style="light" />
+            <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
             <RootNav />
             <SyncGate />
           </AuthProvider>

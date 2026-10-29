@@ -7,6 +7,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { showDialog } from '../../src/lib/dialog';
 import { deleteWorkout, fetchWorkout } from '../../src/api/workouts';
 import { useAuth } from '../../src/auth/AuthProvider';
+import { ShareSheet } from '../../src/components/ShareSheet';
 import { Card, ErrorBanner } from '../../src/components/ui';
 import { formatDay } from '../../src/lib/dates';
 import { useUnits } from '../../src/hooks/useUnits';
@@ -15,15 +16,17 @@ import { localToRow } from '../../src/lib/localData';
 import { isNetworkError } from '../../src/lib/net';
 import { useDraftStore } from '../../src/store/draft';
 import { GUEST, useLocalStore } from '../../src/store/local';
-import { colors } from '../../src/theme';
+import { colors, useScheme } from '../../src/theme';
 import type { WorkoutRow } from '../../src/types';
 
 export default function WorkoutDetail() {
+  useScheme(); // re-render when the appearance changes
   const { id, saved } = useLocalSearchParams<{ id: string; saved?: string }>();
   const router = useRouter();
   const { session } = useAuth();
   const u = useUnits();
   const userIdOrNull = session?.user.id ?? null;
+  const [shareOpen, setShareOpen] = useState(false);
   const [w, setW] = useState<WorkoutRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -31,7 +34,7 @@ export default function WorkoutDetail() {
   const load = useCallback(async () => {
     try {
       setError(null);
-      // A workout saved on this phone (not uploaded yet) takes priority over the server copy.
+      // A workout saved on this device (not uploaded yet) takes priority over the server copy.
       const local = useLocalStore.getState().workouts.find((x) => x.id === id);
       if (local) {
         setW(localToRow(local));
@@ -46,7 +49,7 @@ export default function WorkoutDetail() {
           setW(cached);
           return;
         }
-        setError('You are offline and this workout is not saved on this phone.');
+        setError('You are offline and this workout is not saved on this device.');
         return;
       }
       setError(e instanceof Error ? e.message : 'Could not load workout');
@@ -117,6 +120,7 @@ export default function WorkoutDetail() {
       <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8 }}>
         <IconButton icon="arrow-left" onPress={closeToTabs} accessibilityLabel="Back" />
         <Text variant="titleLarge" style={{ flex: 1, fontWeight: '800' }}>{w?.name ?? 'Workout'}</Text>
+        {w && <IconButton icon="share-variant" onPress={() => setShareOpen(true)} accessibilityLabel="Share workout" />}
       </View>
       <ScrollView contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 40 }}>
         {saved === 'queued' && (
@@ -128,7 +132,7 @@ export default function WorkoutDetail() {
           >
             <MaterialCommunityIcons name="content-save-check" size={24} color={colors.blue} />
             <View style={{ flex: 1 }}>
-              <Text style={{ color: colors.blue, fontWeight: '800', fontSize: 16 }}>Saved on this phone</Text>
+              <Text style={{ color: colors.blue, fontWeight: '800', fontSize: 16 }}>Saved on this device</Text>
               <Text style={{ color: colors.muted, fontSize: 12 }}>
                 {session ? 'It will upload automatically when you are back online.' : 'Sign in later to upload it to your account.'}
               </Text>
@@ -184,6 +188,9 @@ export default function WorkoutDetail() {
               </Card>
             ))}
 
+            <Button mode="contained-tonal" icon="share-variant" onPress={() => setShareOpen(true)} contentStyle={{ height: 48 }} style={{ borderRadius: 16 }}>
+              Share, export or send to a buddy
+            </Button>
             <Button mode="contained" icon="repeat" onPress={repeat} contentStyle={{ height: 52 }} style={{ borderRadius: 16 }}>
               Repeat this workout
             </Button>
@@ -196,6 +203,7 @@ export default function WorkoutDetail() {
           </>
         )}
       </ScrollView>
+      {w && <ShareSheet visible={shareOpen} onClose={() => setShareOpen(false)} workout={w} />}
     </SafeAreaView>
   );
 }

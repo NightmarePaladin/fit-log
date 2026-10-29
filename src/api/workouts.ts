@@ -1,13 +1,21 @@
 import { supabase } from '../lib/supabase';
 import type { Exercise, LocalWorkout, WorkoutRow } from '../types';
 
-export async function fetchExercises(): Promise<Exercise[]> {
-  const { data, error } = await supabase.from('exercises').select('*').order('name');
+/**
+ * The built-in library plus THIS user's custom exercises. The explicit filter matters: buddies can also read
+ * each other's custom exercises, so relying on row-level security alone would list a buddy's here.
+ */
+export async function fetchExercises(userId: string): Promise<Exercise[]> {
+  const { data, error } = await supabase
+    .from('exercises')
+    .select('*')
+    .or(`user_id.is.null,user_id.eq.${userId}`)
+    .order('name');
   if (error) throw error;
   return data as Exercise[];
 }
 
-/** Create a custom exercise. `id` is supplied for exercises first created on the phone (so the id never changes). */
+/** Create a custom exercise. `id` is supplied for exercises first created on the device (so the id never changes). */
 export async function createExercise(
   name: string,
   muscleGroup: string | null,
@@ -50,10 +58,12 @@ const WORKOUT_SELECT =
   'workout_exercises(id,position,exercise_id,exercises(name,reps_only),' +
   'workout_sets(id,exercise_id,set_order,weight,reps,completed))';
 
-export async function fetchWorkouts(): Promise<WorkoutRow[]> {
+/** This user's completed workouts. Filtered by owner explicitly: buddies' workouts are readable too (see 0009). */
+export async function fetchWorkouts(userId: string): Promise<WorkoutRow[]> {
   const { data, error } = await supabase
     .from('workouts')
     .select(WORKOUT_SELECT)
+    .eq('user_id', userId)
     .eq('status', 'completed')
     .order('completed_at', { ascending: false })
     .limit(300);
@@ -68,7 +78,7 @@ export async function fetchWorkout(id: string): Promise<WorkoutRow | null> {
 }
 
 /**
- * Upload a workout. The phone-generated id is reused as the database id, and the save_workout function
+ * Upload a workout. The device-generated id is reused as the database id, and the save_workout function
  * replaces any existing workout with that id, so calling this twice for the same workout never duplicates it.
  */
 export async function uploadWorkout(w: LocalWorkout): Promise<string> {

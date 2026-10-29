@@ -2,13 +2,14 @@ import { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { supabase } from '../../src/lib/supabase';
-import { colors } from '../../src/theme';
+import { colors, useScheme } from '../../src/theme';
 
 /**
  * Landing route for fitlog://auth/callback. Email confirmation and password-reset links arrive here
  * with a one-time ?code=; exchange it for a session (unless Google sign-in already did), then continue.
  */
 export default function AuthCallback() {
+  useScheme(); // re-render when the appearance changes
   const router = useRouter();
   const { code } = useLocalSearchParams<{ code?: string }>();
 

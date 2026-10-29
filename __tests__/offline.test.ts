@@ -57,7 +57,7 @@ describe('draftToLocal', () => {
   });
 });
 
-describe('phone-stored workouts feed the normal screens', () => {
+describe('device-stored workouts feed the normal screens', () => {
   const pending = draftToLocal(draft({ completedAt: '2026-10-28T11:00:00.000Z' }), 'lb', 'pending-1', 'u1');
   const serverRow: WorkoutRow = {
     id: 'server-1', name: 'Old', started_at: '2026-10-20T10:00:00Z', completed_at: '2026-10-20T11:00:00Z', status: 'completed',
@@ -69,7 +69,7 @@ describe('phone-stored workouts feed the normal screens', () => {
     expect(row.pending).toBe(true);
     expect(row.workout_exercises[0].workout_sets[0]).toMatchObject({ weight: 135, reps: 10, completed: true });
   });
-  it('merge puts newest first and a phone copy replaces the server copy with the same id', () => {
+  it('merge puts newest first and a device copy replaces the server copy with the same id', () => {
     const edited = { ...pending, id: 'server-1' };
     const merged = mergeWorkouts([serverRow], [pending, edited]);
     expect(merged.map((w) => w.id).sort()).toEqual(['pending-1', 'server-1']);
@@ -86,7 +86,7 @@ describe('phone-stored workouts feed the normal screens', () => {
 
 describe('visibility rules (privacy)', () => {
   const items = [{ ownerId: 'u1', n: 1 }, { ownerId: 'u2', n: 2 }, { ownerId: null, n: 3 }];
-  it('a signed-in user sees only their own; offline mode sees everything waiting on the phone', () => {
+  it('a signed-in user sees only their own; offline mode sees everything waiting on the device', () => {
     expect(visibleTo(items, 'u1').map((i) => i.n)).toEqual([1]);
     expect(visibleTo(items, null).map((i) => i.n)).toEqual([1, 2, 3]);
   });

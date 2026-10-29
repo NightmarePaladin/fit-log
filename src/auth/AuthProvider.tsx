@@ -272,7 +272,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (next === unit) return;
       const prev = unit;
       if (!userId) {
-        // Offline mode has no account: the preference lives on this phone.
+        // Offline mode has no account: the preference lives on this device.
         useLocalStore.getState().setGuestUnit(next);
         useDraftStore.getState().convertWeights(prev, next);
         return;

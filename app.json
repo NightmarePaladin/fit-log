@@ -6,7 +6,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "dark",
+    "userInterfaceStyle": "automatic",
     "backgroundColor": "#14151A",
     "android": {
       "package": "com.fitlog.app",
@@ -33,7 +33,8 @@
       ],
       "expo-router",
       "expo-secure-store",
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-sharing"
     ],
     "extra": {
       "router": {

@@ -1,21 +1,41 @@
 import { useMemo, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, SectionList, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ActivityIndicator, Chip, Text } from 'react-native-paper';
+import { ActivityIndicator, Button, Chip, Text } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBanner } from '../../src/components/StatusBanner';
+import { buildHistorySheets, isoDay } from '../../src/lib/exports';
+import { deliverFile } from '../../src/lib/shareOut';
+import { buildXlsx, XLSX_MIME } from '../../src/lib/xlsx';
 import { Card, Empty, ErrorBanner } from '../../src/components/ui';
 import { useWorkouts } from '../../src/hooks/useWorkouts';
 import { formatDay } from '../../src/lib/dates';
 import { useUnits } from '../../src/hooks/useUnits';
 import { exerciseNames, workoutTotals } from '../../src/lib/history';
-import { colors } from '../../src/theme';
+import { colors, useScheme } from '../../src/theme';
 
 export default function History() {
+  const scheme = useScheme(); // re-render when the appearance changes
   const router = useRouter();
   const { workouts, loading, error, refresh } = useWorkouts();
   const u = useUnits();
   const [filter, setFilter] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const [exportNote, setExportNote] = useState<string | null>(null);
+
+  const exportHistory = async () => {
+    setExporting(true);
+    setExportNote(null);
+    try {
+      const bytes = buildXlsx(buildHistorySheets(workouts, u));
+      const outcome = await deliverFile(`fit-lift-history-${isoDay(new Date().toISOString())}.xlsx`, bytes, XLSX_MIME);
+      if (outcome === 'downloaded') setExportNote('Saved to your downloads.');
+    } catch (e) {
+      setExportNote(e instanceof Error ? e.message : 'Could not export your history.');
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const names = useMemo(() => exerciseNames(workouts), [workouts]);
   const exerciseList = useMemo(
@@ -38,8 +58,15 @@ export default function History() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
       <Text style={{ fontSize: 30, fontWeight: '800', paddingHorizontal: 16, paddingTop: 8 }}>History</Text>
-      <View style={{ paddingHorizontal: 16, paddingTop: 8 }}>
+      <View style={{ paddingHorizontal: 16, paddingTop: 8, gap: 8 }}>
         <StatusBanner />
+        <Button
+          mode="outlined" icon="microsoft-excel" loading={exporting}
+          disabled={exporting || workouts.length === 0} onPress={exportHistory}
+        >
+          Export history (Excel)
+        </Button>
+        {exportNote && <Text style={{ color: colors.muted, fontSize: 12 }}>{exportNote}</Text>}
       </View>
       <View style={{ height: 56 }}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ padding: 12, gap: 8 }}>
@@ -56,6 +83,7 @@ export default function History() {
       {error && <View style={{ padding: 16 }}><ErrorBanner message={error} onRetry={refresh} /></View>}
 
       <SectionList
+        extraData={scheme}
         sections={sections}
         keyExtractor={(w) => w.id}
         contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 32 }}

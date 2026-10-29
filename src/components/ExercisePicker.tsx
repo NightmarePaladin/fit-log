@@ -4,7 +4,7 @@ import { ActivityIndicator, Button, SegmentedButtons, Text, TextInput } from 're
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../auth/AuthProvider';
 import { createCustomExercise, loadExercises } from '../lib/exercises';
-import { colors } from '../theme';
+import { colors, useScheme } from '../theme';
 import type { Exercise } from '../types';
 
 type Props = {
@@ -23,6 +23,7 @@ export function ExercisePicker({ visible, onClose, onPick }: Props) {
 }
 
 function PickerBody({ onClose, onPick }: Omit<Props, 'visible'>) {
+  const scheme = useScheme();
   const { session } = useAuth();
   const userId = session?.user.id ?? null;
   const [all, setAll] = useState<Exercise[]>([]);
@@ -38,7 +39,7 @@ function PickerBody({ onClose, onPick }: Omit<Props, 'visible'>) {
   const [creating, setCreating] = useState(false);
 
   useEffect(() => {
-    // Works with no connection: falls back to the built-in library plus custom exercises saved on this phone.
+    // Works with no connection: falls back to the built-in library plus custom exercises saved on this device.
     loadExercises(userId)
       .then((r) => {
         setAll(r.exercises);
@@ -85,7 +86,7 @@ function PickerBody({ onClose, onPick }: Omit<Props, 'visible'>) {
           </View>
           {offline && (
             <Text style={{ color: colors.gold, fontSize: 12 }}>
-              Offline: showing the built-in library. New custom exercises are saved on this phone.
+              Offline: showing the built-in library. New custom exercises are saved on this device.
             </Text>
           )}
           <TextInput
@@ -137,6 +138,7 @@ function PickerBody({ onClose, onPick }: Omit<Props, 'visible'>) {
           <ActivityIndicator style={{ marginTop: 24 }} color={colors.accent} />
         ) : (
           <FlatList
+            extraData={scheme}
             data={filtered}
             keyExtractor={(e) => e.id}
             keyboardShouldPersistTaps="handled"

@@ -13,9 +13,10 @@ import { exerciseNames, exerciseRepsOnly, flattenWorkouts, workoutTotals } from 
 import { compareWeeks, detectPRs, fmtPct } from '../../src/lib/stats';
 import { useDraftStore, useHasHydrated } from '../../src/store/draft';
 import { GUEST } from '../../src/store/local';
-import { colors } from '../../src/theme';
+import { colors, useScheme } from '../../src/theme';
 
 export default function Dashboard() {
+  useScheme(); // re-render when the appearance changes
   const router = useRouter();
   const { session, displayName, isGuest, exitOfflineMode } = useAuth();
   const { workouts, loading, error, refresh } = useWorkouts();
@@ -61,7 +62,10 @@ export default function Dashboard() {
               {displayName} <Text style={{ fontSize: 18, color: colors.accent }}>›</Text>
             </Text>
           </Pressable>
-          <IconButton icon="cog" onPress={() => router.push('/settings')} accessibilityLabel="Settings" />
+          <View style={{ flexDirection: 'row' }}>
+            <IconButton icon="account-group" onPress={() => router.push('/buddies')} accessibilityLabel="Buddies" />
+            <IconButton icon="cog" onPress={() => router.push('/settings')} accessibilityLabel="Settings" />
+          </View>
         </View>
 
         <StatusBanner />

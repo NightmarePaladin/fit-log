@@ -32,7 +32,7 @@ async function uploadCustomExercises(userId: string, only?: Set<string>): Promis
 
 /**
  * Finish a workout. Signed-in and online: upload now. Otherwise (no connection, or no account) keep it on the
- * phone and mark it waiting. Real server errors (not connectivity) are thrown so the draft is kept and the user sees them.
+ * device and mark it waiting. Real server errors (not connectivity) are thrown so the draft is kept and the user sees them.
  */
 export async function finishWorkout(draft: Draft, unit: Unit, userId: string | null): Promise<FinishResult> {
   const id = draft.editingWorkoutId ?? newId();
@@ -63,7 +63,7 @@ export async function finishWorkout(draft: Draft, unit: Unit, userId: string | n
 let running: Promise<SyncResult> | null = null;
 export type SyncResult = { uploaded: number; failed: number; offline: boolean };
 
-/** Upload everything waiting on this phone that belongs to `userId`. Safe to call repeatedly. */
+/** Upload everything waiting on this device that belongs to `userId`. Safe to call repeatedly. */
 export function uploadPending(userId: string): Promise<SyncResult> {
   if (running) return running;
   running = (async (): Promise<SyncResult> => {

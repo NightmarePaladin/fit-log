@@ -14,10 +14,10 @@ import { useWorkouts } from '../src/hooks/useWorkouts';
 import { useUnits } from '../src/hooks/useUnits';
 import { previousByExercise, workoutToDraftExercises, type PrevSet } from '../src/lib/history';
 import { useDraftStore } from '../src/store/draft';
-import { colors } from '../src/theme';
+import { colors, getScheme, useScheme } from '../src/theme';
 import type { DraftExercise, Exercise } from '../src/types';
 
-const input = {
+const makeInput = () => ({
   backgroundColor: colors.cardAlt,
   color: colors.text,
   borderRadius: 12,
@@ -26,9 +26,10 @@ const input = {
   textAlign: 'center' as const,
   fontSize: 20,
   fontWeight: '700' as const,
-};
+});
 
 export default function ActiveWorkout() {
+  useScheme(); // re-render when the appearance changes
   const router = useRouter();
   const store = useDraftStore();
   const { draft } = store;
@@ -73,7 +74,7 @@ export default function ActiveWorkout() {
     setSaving(true);
     setError(null);
     try {
-      // Signed in and online: uploaded now. No connection, or no account: kept on this phone to upload later.
+      // Signed in and online: uploaded now. No connection, or no account: kept on this device to upload later.
       const { id, status } = await finishWorkout(toSave, u.unit, session?.user.id ?? null);
       router.replace({ pathname: '/workout/[id]', params: { id, saved: status === 'queued' ? 'queued' : '1' } });
       store.discard();
@@ -178,6 +179,7 @@ export default function ActiveWorkout() {
 }
 
 function ExerciseCard({ ex, prev }: { ex: DraftExercise; prev: PrevSet[] }) {
+  const input = makeInput();
   const { addSet, removeSet, updateSet, removeExercise } = useDraftStore();
   const u = useUnits();
   const confirmRemove = () =>
@@ -258,7 +260,7 @@ function ExerciseCard({ ex, prev }: { ex: DraftExercise; prev: PrevSet[] }) {
                 backgroundColor: s.completed ? colors.success : colors.cardAlt,
               }}
             >
-              <MaterialCommunityIcons name="check" size={26} color={s.completed ? '#0B1F17' : colors.muted} />
+              <MaterialCommunityIcons name="check" size={26} color={s.completed ? (getScheme() === 'light' ? '#FFFFFF' : '#0B1F17') : colors.muted} />
             </Pressable>
           </View>
         );

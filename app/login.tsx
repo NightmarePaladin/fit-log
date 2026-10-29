@@ -5,11 +5,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { friendlyAuthError, useAuth } from '../src/auth/AuthProvider';
 import { isValidEmail, signUpProblem } from '../src/lib/validation';
-import { colors } from '../src/theme';
+import { colors, useScheme } from '../src/theme';
 
 type Mode = 'signin' | 'signup';
 
 export default function Login() {
+  useScheme(); // re-render when the appearance changes
   const {
     signInWithGoogle, signInWithPassword, signUpWithPassword, resendConfirmation, sendPasswordReset, enterOfflineMode,
   } = useAuth();
@@ -81,20 +82,26 @@ export default function Login() {
 
   const google = () => run('google', signInWithGoogle);
 
+  // Logo: name + icon, with the slogan underneath.
   const header = (
-    <View style={{ alignItems: 'center', gap: 10, marginBottom: 20 }}>
-      <View
-        style={{
-          width: 80, height: 80, borderRadius: 24, backgroundColor: colors.accent,
-          alignItems: 'center', justifyContent: 'center',
-        }}
-      >
-        <MaterialCommunityIcons name="dumbbell" size={44} color="#fff" />
+    <View style={{ alignItems: 'center', gap: 6, marginBottom: 24 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+        <Text
+          accessibilityRole="header"
+          style={{ fontSize: 40, lineHeight: 46, fontWeight: '900', letterSpacing: -0.5, color: colors.text }}
+        >
+          Fit Lift
+        </Text>
+        <View
+          style={{
+            width: 46, height: 46, borderRadius: 14, backgroundColor: colors.accent,
+            alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          <MaterialCommunityIcons name="dumbbell" size={28} color="#fff" />
+        </View>
       </View>
-      <Text variant="headlineMedium" style={{ fontWeight: '800' }}>FitLog</Text>
-      <Text style={{ color: colors.muted, textAlign: 'center' }}>
-        Log lifts fast. See last time&apos;s numbers.
-      </Text>
+      <Text style={{ fontSize: 15, color: colors.muted, letterSpacing: 0.3 }}>Log Lifts Fast</Text>
     </View>
   );
 
@@ -249,7 +256,7 @@ export default function Login() {
             Access while offline
           </Button>
           <Text style={{ color: colors.muted, textAlign: 'center', fontSize: 12, marginTop: 4 }}>
-            No signal at the gym? Log workouts on this phone without an account. You can upload them when you sign in.
+            No signal at the gym? Log workouts on this device without an account. You can upload them when you sign in.
           </Text>
           <Text style={{ color: colors.muted, textAlign: 'center', fontSize: 12, marginTop: 10 }}>
             Workouts in an account are private to that account.

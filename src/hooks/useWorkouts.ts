@@ -11,7 +11,7 @@ import { useOnline } from './useOnline';
 
 /**
  * Completed workouts, newest first: the server's copy (or the last cached copy when offline) plus any
- * workouts saved on this phone that have not been uploaded yet. Reloads every time the screen gains focus.
+ * workouts saved on this device that have not been uploaded yet. Reloads every time the screen gains focus.
  */
 export function useWorkouts() {
   const { session } = useAuth();
@@ -30,12 +30,12 @@ export function useWorkouts() {
   const pendingCount = mine.length;
 
   const refresh = useCallback(async () => {
-    if (!userId) return; // offline (no account) mode: only what is saved on this phone
+    if (!userId) return; // offline (no account) mode: only what is saved on this device
     try {
       const live = await hasLiveSession();
       setError(null);
       if (!live) throw new Error('offline');
-      const rows = await fetchWorkouts();
+      const rows = await fetchWorkouts(userId);
       setServer(rows);
       setUnreachable(false);
       useLocalStore.getState().setCache(userId, { workouts: rows });

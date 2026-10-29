@@ -4,6 +4,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import type { Exercise, LocalExercise, LocalWorkout, WorkoutRow } from '../types';
 import type { Unit } from '../lib/units';
+import type { ThemeMode } from '../theme';
 
 export const GUEST = 'guest'; // draft owner id used in offline (no account) mode
 const CACHE_LIMIT = 150;
@@ -15,7 +16,7 @@ type UserCache = {
 };
 
 type LocalState = {
-  /** Workouts saved on this phone and not uploaded yet (guest-made and signed-in-while-offline). */
+  /** Workouts saved on this device and not uploaded yet (guest-made and signed-in-while-offline). */
   workouts: LocalWorkout[];
   /** Custom exercises created offline, not uploaded yet. */
   customExercises: LocalExercise[];
@@ -25,6 +26,8 @@ type LocalState = {
   offlineMode: boolean;
   /** Weight unit for offline (no account) mode. */
   guestUnit: Unit;
+  /** Appearance: dark (default), light, or follow the device setting. */
+  themeMode: ThemeMode;
 
   addWorkout: (w: LocalWorkout) => void;
   removeWorkout: (id: string) => void;
@@ -42,6 +45,7 @@ type LocalState = {
   purgeUser: (userId: string) => void;
   setOfflineMode: (on: boolean) => void;
   setGuestUnit: (unit: Unit) => void;
+  setThemeMode: (mode: ThemeMode) => void;
 };
 
 export const useLocalStore = create<LocalState>()(
@@ -52,6 +56,7 @@ export const useLocalStore = create<LocalState>()(
       cache: {},
       offlineMode: false,
       guestUnit: 'lb',
+      themeMode: 'dark',
 
       addWorkout: (w) =>
         set((s) => ({ workouts: [...s.workouts.filter((x) => x.id !== w.id), { ...w, error: undefined }] })),
@@ -99,6 +104,7 @@ export const useLocalStore = create<LocalState>()(
         }),
       setOfflineMode: (on) => set({ offlineMode: on }),
       setGuestUnit: (unit) => set({ guestUnit: unit }),
+      setThemeMode: (mode) => set({ themeMode: mode }),
     }),
     {
       name: 'fitlog:local',

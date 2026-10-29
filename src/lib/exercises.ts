@@ -8,14 +8,14 @@ import { hasLiveSession } from './session';
 
 /**
  * The exercise list for the picker. Online it comes from the server (and is cached); with no connection or no
- * account it is the bundled library plus any custom exercises made on this phone.
+ * account it is the bundled library plus any custom exercises made on this device.
  */
 export async function loadExercises(userId: string | null): Promise<{ exercises: Exercise[]; offline: boolean }> {
   const store = useLocalStore.getState();
   if (userId) {
     try {
       if (!(await hasLiveSession())) throw new Error('offline');
-      const all = await fetchExercises();
+      const all = await fetchExercises(userId);
       store.setCache(userId, { customExercises: all.filter((e) => e.is_custom) });
       const known = new Set(all.map((e) => e.id));
       const waiting = visibleTo(store.customExercises, userId).filter((e) => !known.has(e.id));
@@ -28,7 +28,7 @@ export async function loadExercises(userId: string | null): Promise<{ exercises:
   return { exercises: offlineExercises(userId, cachedCustom, store.customExercises), offline: true };
 }
 
-/** Create a custom exercise: on the server when possible, otherwise on the phone to upload later. */
+/** Create a custom exercise: on the server when possible, otherwise on the device to upload later. */
 export async function createCustomExercise(
   name: string,
   userId: string | null,

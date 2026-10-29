@@ -39,12 +39,21 @@ Optional demo data: `supabase/seed/demo_workouts.sql` creates ~4 weeks of workou
 3. **Supabase** → Authentication → URL Configuration → *Redirect URLs*: add `fitlog://auth/callback` (and `exp://**` if you ever use Expo Go; not recommended).
 4. The app scheme is `fitlog` (`app.json`). The redirect URI is built with `Linking.createURL('auth/callback')`.
 
+## Sharing, buddies and exports
+- **Share a workout** (workout page → *Share, export or send to a buddy*): as a **picture** (a branded Fit Lift card, shared through the system share sheet so it can go to Instagram, Messages, WhatsApp, etc.; on the web it uses the browser's share sheet or downloads a PNG), as **text**, or as a **private link** (`/s/<token>`) that anyone can open in a browser without an account. A link only ever shows that one workout and can be turned off at any time (`workout_shares`, `get_shared_workout`).
+- **Buddies** (Dashboard → people icon, or Settings): create an 8-character invite code and send it; your buddy enters it under *Have a code?*. Connecting lets you each see the other's workouts, **read-only**. Either of you can stop sharing (one direction) or remove the buddy (both). Codes are single use, expire after 7 days, and a wrong/used/expired code gives the same error so codes cannot be probed. Tables `buddy_shares` and `buddy_invites`, functions `create_buddy_invite` / `accept_buddy_invite`, migration `0009_sharing.sql`.
+- **Export a workout plan to Excel** (share sheet → *Export as plan (Excel)*): the workout's exercises and sets with what you did last time and blank yellow cells for next time's target weight/reps.
+- **Export your history to Excel** (History → *Export history (Excel)*): a *Workouts* sheet (one row per workout) and a *Sets* sheet (one row per set). Weights use your chosen unit. The .xlsx is written by a small built-in generator (`src/lib/xlsx.ts`) using `fflate`; no spreadsheet library with known vulnerabilities is used.
+- **Appearance**: Settings → Dark, Light or System.
+- Important when querying: buddies can read each other's workouts, so every query for "my" data filters by `user_id` explicitly (`fetchWorkouts`, `fetchExercises`).
+- New native modules (`expo-sharing`, `expo-file-system`, `expo-clipboard`, `react-native-view-shot`) need a new Android build.
+
 ## Offline use (gyms with no signal)
-- **Signed-in users stay signed in offline.** The saved session is used when the connection is missing or slow (the app stops waiting after 6 seconds), so you are not sent to the login screen. Recent workouts are cached on the phone, so Last Workout, History, Dashboard and Progress keep working.
-- **Finishing a workout with no connection saves it on the phone** ("Saved on this phone") and uploads automatically when you are back online. A banner shows what is waiting, with an **Upload now** button.
-- **Access while offline** (login screen): use the app with no account. Workouts, custom exercises and the lb/kg setting stay on the phone. When you later sign in, the app **asks** before uploading them to that account (Upload / Not now / Delete). Nothing is uploaded without that choice.
-- **No duplicates:** each workout gets its own id on the phone, and the database save (`0007_idempotent_save.sql`) replaces a workout with the same id, so retries and re-uploads are safe. Another user cannot overwrite your workout by reusing its id.
-- **Privacy:** offline mode shows only workouts waiting on the phone, never a signed-in user's cached history. Signing out clears the cached copy of your server data but keeps un-uploaded workouts (the app warns first). A signed-in user only sees their own waiting workouts.
+- **Signed-in users stay signed in offline.** The saved session is used when the connection is missing or slow (the app stops waiting after 6 seconds), so you are not sent to the login screen. Recent workouts are cached on the device, so Last Workout, History, Dashboard and Progress keep working.
+- **Finishing a workout with no connection saves it on the device** ("Saved on this device") and uploads automatically when you are back online. A banner shows what is waiting, with an **Upload now** button.
+- **Access while offline** (login screen): use the app with no account. Workouts, custom exercises and the lb/kg setting stay on the device. When you later sign in, the app **asks** before uploading them to that account (Upload / Not now / Delete). Nothing is uploaded without that choice.
+- **No duplicates:** each workout gets its own id on the device, and the database save (`0007_idempotent_save.sql`) replaces a workout with the same id, so retries and re-uploads are safe. Another user cannot overwrite your workout by reusing its id.
+- **Privacy:** offline mode shows only workouts waiting on the device, never a signed-in user's cached history. Signing out clears the cached copy of your server data but keeps un-uploaded workouts (the app warns first). A signed-in user only sees their own waiting workouts.
 - The 34 built-in exercises ship with the app (`src/data/library.ts`), so the picker works on a first launch with no signal.
 - Needs a connection: changing your name, deleting a workout that is on the server, and deleting your account. Offline Progress uses the 150 most recent cached workouts.
 - Adds the native module `@react-native-community/netinfo`, so it needs a new Android build (not just a refresh).
@@ -73,7 +82,7 @@ npx eas-cli login                                   # free Expo account
 npx eas-cli init                                    # links the project
 npx eas-cli build --profile development --platform android
 ```
-When the build finishes, open the link/QR it prints on your phone and install the APK (allow "install unknown apps"). Then run `npx expo start --dev-client` on your PC and open the app on the phone (same Wi-Fi).
+When the build finishes, open the link/QR it prints on your device and install the APK (allow "install unknown apps"). Then run `npx expo start --dev-client` on your PC and open the app on the device (same Wi-Fi).
 
 ## 4c. Run on Android (local, needs Android Studio)
 Google sign-in returns through a custom-scheme deep link, so use a **development build**, not Expo Go.
@@ -81,7 +90,7 @@ Google sign-in returns through a custom-scheme deep link, so use a **development
 # Option A: local (Android Studio + emulator or USB device with debugging on)
 npx expo run:android
 
-# Option B: cloud build, install the APK on your phone
+# Option B: cloud build, install the APK on your device
 npx eas-cli build --profile development --platform android
 npx expo start --dev-client
 ```
@@ -127,5 +136,5 @@ Data flow: screens load completed workouts (nested select) → `stats.ts` comput
 Security: every table has RLS; child tables check ownership through their parent workout. `anon` has no table access. The draft stores an `ownerId` and the Dashboard ignores drafts from another account. Weights are stored in pounds (`profiles.unit` is constrained to `lb` for the MVP).
 
 ## Known limits
-- No rest timer or plate calculator. Offline sync is tested with unit tests and a browser walk-through of offline mode; the signed-in sync should also be checked on a phone in airplane mode.
+- No rest timer or plate calculator. Offline sync is tested with unit tests and a browser walk-through of offline mode; the signed-in sync should also be checked on a device in airplane mode.
 - History/Progress load the latest 300 workouts and compute in-app.

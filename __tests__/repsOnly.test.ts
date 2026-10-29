@@ -81,7 +81,7 @@ describe('creating a custom exercise', () => {
     jest.resetAllMocks();
   });
 
-  it('offline: stored on the phone with the chosen type, then uploaded with that type', async () => {
+  it('offline: stored on the device with the chosen type, then uploaded with that type', async () => {
     (hasLiveSession as jest.Mock).mockResolvedValue(false);
     const ex = await createCustomExercise('Ring Dip', 'u1', LIBRARY, true);
     expect(ex).toMatchObject({ id: 'local-id-1', name: 'Ring Dip', reps_only: true, is_custom: true });

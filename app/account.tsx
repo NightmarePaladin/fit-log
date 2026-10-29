@@ -6,9 +6,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { friendlyAuthError, useAuth } from '../src/auth/AuthProvider';
 import { passwordProblem } from '../src/lib/validation';
 import { Card, SectionTitle } from '../src/components/ui';
-import { colors } from '../src/theme';
+import { colors, useScheme } from '../src/theme';
 
 export default function Account() {
+  useScheme(); // re-render when the appearance changes
   const router = useRouter();
   const { session, exitOfflineMode, fullName, avatarUrl, updateProfile, deleteAccount, recovery, updatePassword } = useAuth();
   const [name, setName] = useState(fullName);
