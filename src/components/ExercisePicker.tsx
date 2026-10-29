@@ -35,7 +35,7 @@ function PickerBody({ onClose, onPick }: Omit<Props, 'visible'>) {
   // "Create custom exercise" form
   const [formOpen, setFormOpen] = useState(false);
   const [newName, setNewName] = useState('');
-  const [repsOnly, setRepsOnly] = useState(false);
+  const [kind, setKind] = useState<'weight' | 'reps' | 'time'>('weight');
   const [creating, setCreating] = useState(false);
 
   useEffect(() => {
@@ -59,7 +59,7 @@ function PickerBody({ onClose, onPick }: Omit<Props, 'visible'>) {
 
   const openForm = () => {
     setNewName(typed);
-    setRepsOnly(false);
+    setKind('weight');
     setError(null);
     setFormOpen(true);
   };
@@ -68,7 +68,7 @@ function PickerBody({ onClose, onPick }: Omit<Props, 'visible'>) {
     setCreating(true);
     setError(null);
     try {
-      onPick(await createCustomExercise(newName, userId, all, repsOnly));
+      onPick(await createCustomExercise(newName, userId, all, kind === 'time' ? 'time' : kind === 'reps'));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not create exercise');
     } finally {
@@ -105,17 +105,20 @@ function PickerBody({ onClose, onPick }: Omit<Props, 'visible'>) {
               <Text style={{ fontWeight: '800', fontSize: 16 }}>New custom exercise</Text>
               <TextInput mode="outlined" label="Exercise name" value={newName} onChangeText={setNewName} autoFocus maxLength={80} />
               <SegmentedButtons
-                value={repsOnly ? 'reps' : 'weight'}
-                onValueChange={(v) => setRepsOnly(v === 'reps')}
+                value={kind}
+                onValueChange={(v) => (v === 'weight' || v === 'reps' || v === 'time') && setKind(v)}
                 buttons={[
-                  { value: 'weight', label: 'Weight + reps', icon: 'weight-lifter' },
-                  { value: 'reps', label: 'Reps only', icon: 'human-handsup' },
+                  { value: 'weight', label: 'Weight', icon: 'weight-lifter' },
+                  { value: 'reps', label: 'Reps', icon: 'human-handsup' },
+                  { value: 'time', label: 'Timed', icon: 'timer-outline' },
                 ]}
               />
               <Text style={{ color: colors.muted, fontSize: 12 }}>
-                {repsOnly
-                  ? 'For bodyweight moves like push-ups or pull-ups: you log reps, no weight.'
-                  : 'You log the weight and the reps for each set.'}
+                {kind === 'time'
+                  ? 'For running, planks, rowing or anything you time: you log minutes and seconds, no weight or reps.'
+                  : kind === 'reps'
+                    ? 'For bodyweight moves like push-ups or pull-ups: you log reps, no weight.'
+                    : 'You log the weight and the reps for each set.'}
               </Text>
               {error && <Text style={{ color: colors.danger }}>{error}</Text>}
               <View style={{ flexDirection: 'row', gap: 8, justifyContent: 'flex-end' }}>
@@ -151,7 +154,7 @@ function PickerBody({ onClose, onPick }: Omit<Props, 'visible'>) {
                 <Text style={{ fontSize: 17, fontWeight: '600' }}>{item.name}</Text>
                 <Text style={{ color: colors.muted, fontSize: 13 }}>
                   {item.is_custom ? 'Custom' : item.muscle_group}
-                  {item.reps_only ? '  ·  Reps only' : ''}
+                  {item.timed ? '  ·  Timed' : item.reps_only ? '  ·  Reps only' : ''}
                 </Text>
               </Pressable>
             )}

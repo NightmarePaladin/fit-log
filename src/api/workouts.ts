@@ -21,7 +21,7 @@ export async function createExercise(
   muscleGroup: string | null,
   userId: string,
   id?: string,
-  repsOnly = false,
+  repsOnly: boolean | 'time' = false,
 ): Promise<Exercise> {
   const { data, error } = await supabase
     .from('exercises')
@@ -31,7 +31,8 @@ export async function createExercise(
       muscle_group: muscleGroup,
       user_id: userId,
       is_custom: true,
-      reps_only: repsOnly,
+      reps_only: !!repsOnly,
+      timed: repsOnly === 'time',
     })
     .select()
     .single();
@@ -55,7 +56,7 @@ export async function findCustomExerciseByName(userId: string, name: string): Pr
 
 const WORKOUT_SELECT =
   'id,name,started_at,completed_at,status,' +
-  'workout_exercises(id,position,exercise_id,exercises(name,reps_only),' +
+  'workout_exercises(id,position,exercise_id,exercises(name,reps_only,timed),' +
   'workout_sets(id,exercise_id,set_order,weight,reps,completed))';
 
 /** This user's completed workouts. Filtered by owner explicitly: buddies' workouts are readable too (see 0009). */

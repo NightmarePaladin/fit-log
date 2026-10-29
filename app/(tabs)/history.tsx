@@ -12,6 +12,7 @@ import { useWorkouts } from '../../src/hooks/useWorkouts';
 import { formatDay } from '../../src/lib/dates';
 import { useUnits } from '../../src/hooks/useUnits';
 import { exerciseNames, workoutTotals } from '../../src/lib/history';
+import { formatDuration, repsModeOf } from '../../src/lib/units';
 import { colors, useScheme } from '../../src/theme';
 
 export default function History() {
@@ -102,7 +103,7 @@ export default function History() {
                 {focus ? (
                   <Text style={{ color: colors.text }}>
                     {names.get(filter!)}: {[...focus.workout_sets].sort((a, b) => a.set_order - b.set_order)
-                      .filter((s) => s.completed).map((s) => u.setOrReps(Number(s.weight), s.reps, focus.exercises?.reps_only)).join(', ') || 'no completed sets'}
+                      .filter((s) => s.completed).map((s) => u.setOrReps(Number(s.weight), s.reps, repsModeOf(focus.exercises))).join(', ') || 'no completed sets'}
                   </Text>
                 ) : (
                   <Text style={{ color: colors.muted }} numberOfLines={2}>
@@ -110,7 +111,7 @@ export default function History() {
                   </Text>
                 )}
                 <Text style={{ color: colors.accent, fontWeight: '700' }}>
-                  {t.sets} sets · {t.volume > 0 ? `${u.vol(t.volume)} ${u.label}` : `${t.reps} reps`}
+                  {t.sets} sets · {t.volume > 0 ? `${u.vol(t.volume)} ${u.label}` : t.reps === 0 && t.seconds > 0 ? formatDuration(t.seconds) : `${t.reps} reps`}
                   {w.pending ? <Text style={{ color: colors.gold }}>  ·  Not uploaded</Text> : null}
                 </Text>
               </Card>

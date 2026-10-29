@@ -91,7 +91,7 @@ export async function removeBuddy(myId: string, buddyId: string): Promise<void> 
 
 const BUDDY_SELECT =
   'id,name,started_at,completed_at,status,' +
-  'workout_exercises(id,position,exercise_id,exercises(name,reps_only),' +
+  'workout_exercises(id,position,exercise_id,exercises(name,reps_only,timed),' +
   'workout_sets(id,exercise_id,set_order,weight,reps,completed))';
 
 /** A buddy's recent workouts (read-only; allowed by the database only while they share with me). */

@@ -53,7 +53,7 @@ describe('reps-only exercises', () => {
     const row = localToRow(draftToLocal(draftWith(true), 'lb', 'w1', null));
     expect(workoutToDraftExercises(row)[0].repsOnly).toBe(true);
     expect(exerciseRepsOnly([row]).has('pushup')).toBe(true);
-    expect(workoutTotals(row)).toEqual({ volume: 0, sets: 1, reps: 15 });
+    expect(workoutTotals(row)).toEqual({ volume: 0, sets: 1, reps: 15, seconds: 0 });
   });
 
   it('formats "12 reps" for reps-only sets and normal sets otherwise', () => {

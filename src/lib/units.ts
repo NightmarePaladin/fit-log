@@ -26,6 +26,26 @@ export function convertWeightString(s: string, from: Unit, to: Unit): string {
 
 export const trimNum = (n: number) => (Number.isInteger(n) ? String(n) : String(+n.toFixed(2)));
 
+/**
+ * How an exercise is logged: with weight + reps (false), reps only (true), or by time ('time').
+ * A timed set keeps its duration in SECONDS in the `reps` field and has no weight, so 'time' is also truthy
+ * everywhere that only cares "is there a weight?".
+ */
+export type RepsMode = boolean | 'time';
+
+export const repsModeOf = (ex?: { reps_only?: boolean; timed?: boolean } | null): RepsMode =>
+  ex?.timed ? 'time' : !!ex?.reps_only;
+
+/** 75 → "1:15", 3725 → "1:02:05" */
+export function formatDuration(totalSeconds: number): string {
+  const t = Math.max(0, Math.round(totalSeconds));
+  const h = Math.floor(t / 3600);
+  const m = Math.floor((t % 3600) / 60);
+  const s = t % 60;
+  const ss = String(s).padStart(2, '0');
+  return h > 0 ? `${h}:${String(m).padStart(2, '0')}:${ss}` : `${m}:${ss}`;
+}
+
 export type UnitFormat = {
   unit: Unit;
   /** "lb" | "kg" */
@@ -36,8 +56,8 @@ export type UnitFormat = {
   fmt: (lb: number) => string;
   /** stored lb + reps → "135 × 10" */
   set: (lb: number, reps: number) => string;
-  /** like set(), but a reps-only exercise with no weight reads "12 reps" */
-  setOrReps: (lb: number, reps: number, repsOnly?: boolean) => string;
+  /** like set(), but a reps-only exercise with no weight reads "12 reps" (a timed one "12:30") */
+  setOrReps: (lb: number, reps: number, repsOnly?: RepsMode) => string;
   /** stored-lb volume → "12,345" */
   vol: (lb: number) => string;
   /** weight typed by the user in the display unit → lb for storage */
@@ -52,7 +72,11 @@ export function makeUnitFormat(unit: Unit): UnitFormat {
     fmt: (lb) => trimNum(toDisplay(lb, unit)),
     set: (lb, reps) => `${trimNum(toDisplay(lb, unit))} × ${reps}`,
     setOrReps: (lb, reps, repsOnly) =>
-      repsOnly && lb === 0 ? `${reps} reps` : `${trimNum(toDisplay(lb, unit))} × ${reps}`,
+      repsOnly === 'time'
+        ? formatDuration(reps)
+        : repsOnly && lb === 0
+          ? `${reps} reps`
+          : `${trimNum(toDisplay(lb, unit))} × ${reps}`,
     vol: (lb) => Math.round(toDisplay(lb, unit)).toLocaleString(),
     toLb: (value) => toLb(value, unit),
   };

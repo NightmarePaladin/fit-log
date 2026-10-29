@@ -1,5 +1,5 @@
 import { formatDay } from './dates';
-import type { UnitFormat } from './units';
+import { formatDuration, repsModeOf, type RepsMode, type UnitFormat } from './units';
 import { workoutTotals } from './history';
 import type { WorkoutRow } from '../types';
 
@@ -14,9 +14,13 @@ export type ShareCardData = {
 type SetLike = { weight: number; reps: number; completed: boolean };
 
 /** "3 × 10 @ 135 lb", "135×10 · 155×8 · 175×6", or "15 · 12 · 10 reps" for reps-only moves. */
-export function describeSets(sets: SetLike[], repsOnly: boolean, u: UnitFormat, maxShown = 4): string {
+export function describeSets(sets: SetLike[], repsOnly: RepsMode, u: UnitFormat, maxShown = 4): string {
   const done = sets.filter((s) => s.completed && s.reps > 0);
   if (done.length === 0) return '';
+  if (repsOnly === 'time') {
+    const shown = done.slice(0, maxShown).map((s) => formatDuration(s.reps)).join(' · ');
+    return `${shown}${done.length > maxShown ? ` +${done.length - maxShown}` : ''}`;
+  }
   if (repsOnly && done.every((s) => s.weight === 0)) {
     const shown = done.slice(0, maxShown).map((s) => s.reps).join(' · ');
     return `${shown}${done.length > maxShown ? ` +${done.length - maxShown}` : ''} reps`;
@@ -37,7 +41,7 @@ export function buildShareCard(w: WorkoutRow, u: UnitFormat, owner: string): Sha
       name: we.exercises?.name ?? 'Exercise',
       detail: describeSets(
         we.workout_sets.map((s) => ({ weight: Number(s.weight), reps: s.reps, completed: s.completed })),
-        !!we.exercises?.reps_only,
+        repsModeOf(we.exercises),
         u,
       ),
     }))
@@ -48,7 +52,12 @@ export function buildShareCard(w: WorkoutRow, u: UnitFormat, owner: string): Sha
     title: w.name || 'Workout',
     date: w.completed_at ? formatDay(w.completed_at) : '',
     rows,
-    total: t.volume > 0 ? `${u.vol(t.volume)} ${u.label} lifted` : `${t.reps} total reps`,
+    total:
+      t.volume > 0
+        ? `${u.vol(t.volume)} ${u.label} lifted`
+        : [t.reps > 0 ? `${t.reps} total reps` : '', t.seconds > 0 ? `${formatDuration(t.seconds)} total time` : '']
+            .filter(Boolean)
+            .join(' · '),
   };
 }
 

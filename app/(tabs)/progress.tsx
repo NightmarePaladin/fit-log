@@ -8,17 +8,18 @@ import { Card, Empty, ErrorBanner, SectionTitle } from '../../src/components/ui'
 import { useUnits } from '../../src/hooks/useUnits';
 import { useWorkouts } from '../../src/hooks/useWorkouts';
 import { addWeeks, formatDay, startOfWeek } from '../../src/lib/dates';
-import { exerciseNames, exerciseRepsOnly, flattenWorkouts } from '../../src/lib/history';
+import { exerciseNames, exerciseRepsOnly, exerciseTimed, flattenWorkouts } from '../../src/lib/history';
+import { formatDuration } from '../../src/lib/units';
 import { compareWeeks, detectPRs, fmtNum, fmtPct, weeklySeries } from '../../src/lib/stats';
 import { colors, useScheme } from '../../src/theme';
 
-function Delta({ value, suffix = '' }: { value: number | null; suffix?: string }) {
+function Delta({ value, suffix = '', fmt }: { value: number | null; suffix?: string; fmt?: (n: number) => string }) {
   if (value == null) return <Text style={{ color: colors.muted, fontWeight: '800' }}>—</Text>;
   const color = value > 0 ? colors.success : value < 0 ? colors.danger : colors.muted;
   return (
     <Text style={{ color, fontWeight: '800', fontSize: 16 }}>
-      {value > 0 ? '+' : ''}
-      {+value.toFixed(2)}
+      {value > 0 ? '+' : value < 0 && fmt ? '-' : ''}
+      {fmt ? fmt(Math.abs(value)) : +value.toFixed(2)}
       {suffix}
     </Text>
   );
@@ -47,9 +48,12 @@ export default function Progress() {
   const names = useMemo(() => exerciseNames(workouts), [workouts]);
   const exerciseList = useMemo(() => [...names.entries()].sort((a, b) => a[1].localeCompare(b[1])), [names]);
   const repsOnlyIds = useMemo(() => exerciseRepsOnly(workouts), [workouts]);
+  const timedIds = useMemo(() => exerciseTimed(workouts), [workouts]);
   const effective = selected && names.has(selected) ? selected : null;
   /** a bodyweight exercise is selected: progress is measured in reps, not weight */
   const repsMode = !!effective && repsOnlyIds.has(effective);
+  /** a timed exercise (running, plank): the "reps" are seconds, shown as m:ss */
+  const timedMode = !!effective && timedIds.has(effective);
 
   const cmp = useMemo(() => compareWeeks(flat, effective), [flat, effective]);
   const series = useMemo(() => weeklySeries(flat, effective, 8), [flat, effective]);
@@ -131,24 +135,26 @@ export default function Progress() {
             {repsMode ? (
               <Card style={{ gap: 14 }}>
                 <View style={{ flexDirection: 'row', gap: 12 }}>
-                  <Pair label="Best set" prev={cmp.previous.maxReps} cur={cmp.current.maxReps} unit="reps" />
-                  <Pair label="Total reps" prev={cmp.previous.totalReps || null} cur={cmp.current.totalReps || null} unit="reps" />
+                  <Pair label={timedMode ? 'Longest' : 'Best set'} prev={cmp.previous.maxReps} cur={cmp.current.maxReps} unit={timedMode ? '' : 'reps'} fmt={timedMode ? formatDuration : undefined} />
+                  <Pair label={timedMode ? 'Total time' : 'Total reps'} prev={cmp.previous.totalReps || null} cur={cmp.current.totalReps || null} unit={timedMode ? '' : 'reps'} fmt={timedMode ? formatDuration : undefined} />
                 </View>
                 <View style={{ height: 1, backgroundColor: colors.border }} />
                 <View style={{ flexDirection: 'row', gap: 12 }}>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ color: colors.muted, fontSize: 12, textTransform: 'uppercase' }}>Best set change</Text>
-                    <Delta value={cmp.repsDelta} suffix=" reps" />
+                    <Text style={{ color: colors.muted, fontSize: 12, textTransform: 'uppercase' }}>{timedMode ? 'Longest change' : 'Best set change'}</Text>
+                    <Delta value={cmp.repsDelta} suffix={timedMode ? '' : ' reps'} fmt={timedMode ? formatDuration : undefined} />
                     <Text style={{ color: colors.muted, fontSize: 12 }}>{fmtPct(cmp.repsChangePct)}</Text>
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ color: colors.muted, fontSize: 12, textTransform: 'uppercase' }}>Total reps change</Text>
-                    <Delta value={cmp.previous.totalReps > 0 ? cmp.totalRepsDelta : null} suffix=" reps" />
+                    <Text style={{ color: colors.muted, fontSize: 12, textTransform: 'uppercase' }}>{timedMode ? 'Total time change' : 'Total reps change'}</Text>
+                    <Delta value={cmp.previous.totalReps > 0 ? cmp.totalRepsDelta : null} suffix={timedMode ? '' : ' reps'} fmt={timedMode ? formatDuration : undefined} />
                     <Text style={{ color: colors.muted, fontSize: 12 }}>{fmtPct(cmp.totalRepsChangePct)}</Text>
                   </View>
                 </View>
                 <Text style={{ color: colors.muted, fontSize: 12 }}>
-                  Bodyweight exercise: progress is measured in reps, not weight.
+                  {timedMode
+                    ? 'Timed exercise: progress is measured in time (minutes:seconds).'
+                    : 'Bodyweight exercise: progress is measured in reps, not weight.'}
                 </Text>
               </Card>
             ) : (
@@ -204,7 +210,7 @@ export default function Progress() {
             )}
 
             <SectionTitle>
-              {repsMode ? 'Best set (reps) per week' : effective ? 'Best weight per week' : 'Total volume per week'}
+              {timedMode ? 'Longest time per week' : repsMode ? 'Best set (reps) per week' : effective ? 'Best weight per week' : 'Total volume per week'}
             </SectionTitle>
             <Card>
               {(effective ? weightPts : volumePts).length >= 2 ? (
@@ -216,7 +222,7 @@ export default function Progress() {
 
             {effective && (
               <>
-                <SectionTitle>{repsMode ? 'Total reps per week' : 'Total volume per week'}</SectionTitle>
+                <SectionTitle>{timedMode ? 'Total time per week' : repsMode ? 'Total reps per week' : 'Total volume per week'}</SectionTitle>
                 <Card>
                   {volumePts.length >= 2 ? (
                     chart(volumePts, colors.blue)
@@ -242,7 +248,7 @@ export default function Progress() {
                       </Text>
                     </View>
                     <Text style={{ color: colors.gold, fontWeight: '800', fontSize: 17 }}>
-                      {u.setOrReps(pr.weight, pr.reps, repsOnlyIds.has(pr.exerciseId))}
+                      {u.setOrReps(pr.weight, pr.reps, timedIds.has(pr.exerciseId) ? 'time' : repsOnlyIds.has(pr.exerciseId))}
                     </Text>
                   </View>
                 ))

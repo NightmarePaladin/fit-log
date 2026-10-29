@@ -9,7 +9,7 @@ import { Card } from '../../src/components/ui';
 import { formatDay } from '../../src/lib/dates';
 import { isNetworkError } from '../../src/lib/net';
 import { describeSets } from '../../src/lib/shareCard';
-import { makeUnitFormat, type Unit } from '../../src/lib/units';
+import { makeUnitFormat, repsModeOf, type Unit } from '../../src/lib/units';
 import { colors, useScheme } from '../../src/theme';
 
 /** Public page for a shared workout link. No account needed. */
@@ -88,12 +88,12 @@ export default function SharedWorkoutPage() {
                 {ex.sets.map((s, j) => (
                   <View key={j} style={{ flexDirection: 'row', gap: 10 }}>
                     <Text style={{ width: 24, color: colors.muted, fontWeight: '700' }}>{j + 1}</Text>
-                    <Text style={{ flex: 1, fontSize: 18, fontWeight: '700' }}>{u.setOrReps(Number(s.weight), s.reps, ex.reps_only)}</Text>
+                    <Text style={{ flex: 1, fontSize: 18, fontWeight: '700' }}>{u.setOrReps(Number(s.weight), s.reps, repsModeOf(ex))}</Text>
                     {!s.completed && <Text style={{ color: colors.muted }}>not completed</Text>}
                   </View>
                 ))}
                 <Text style={{ color: colors.muted, fontSize: 12 }}>
-                  {describeSets(ex.sets.map((s) => ({ weight: Number(s.weight), reps: s.reps, completed: s.completed })), ex.reps_only, u)}
+                  {describeSets(ex.sets.map((s) => ({ weight: Number(s.weight), reps: s.reps, completed: s.completed })), repsModeOf(ex), u)}
                 </Text>
               </Card>
             ))}

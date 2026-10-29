@@ -12,6 +12,7 @@ import { Card, ErrorBanner } from '../../src/components/ui';
 import { formatDay } from '../../src/lib/dates';
 import { useUnits } from '../../src/hooks/useUnits';
 import { workoutToDraftExercises, workoutTotals } from '../../src/lib/history';
+import { formatDuration, repsModeOf } from '../../src/lib/units';
 import { localToRow } from '../../src/lib/localData';
 import { isNetworkError } from '../../src/lib/net';
 import { useDraftStore } from '../../src/store/draft';
@@ -166,8 +167,10 @@ export default function WorkoutDetail() {
                 <Text style={{ color: colors.muted }}>sets</Text>
               </View>
               <View style={{ alignItems: 'center' }}>
-                <Text style={{ fontSize: 30, fontWeight: '800', color: colors.accent }}>{totals.volume > 0 ? u.vol(totals.volume) : totals.reps}</Text>
-                <Text style={{ color: colors.muted }}>{totals.volume > 0 ? `${u.label} volume` : 'total reps'}</Text>
+                <Text style={{ fontSize: 30, fontWeight: '800', color: colors.accent }}>{totals.volume > 0 ? u.vol(totals.volume) : totals.reps === 0 && totals.seconds > 0 ? formatDuration(totals.seconds) : totals.reps}</Text>
+                <Text style={{ color: colors.muted }}>
+                  {totals.volume > 0 ? `${u.label} volume` : totals.reps === 0 && totals.seconds > 0 ? 'total time' : 'total reps'}
+                </Text>
               </View>
             </Card>
 
@@ -177,7 +180,7 @@ export default function WorkoutDetail() {
                 {[...we.workout_sets].sort((a, b) => a.set_order - b.set_order).map((s) => (
                   <View key={s.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                     <Text style={{ width: 24, color: colors.muted, fontWeight: '700' }}>{s.set_order}</Text>
-                    <Text style={{ flex: 1, fontSize: 20, fontWeight: '700' }}>{u.setOrReps(Number(s.weight), s.reps, we.exercises?.reps_only)}</Text>
+                    <Text style={{ flex: 1, fontSize: 20, fontWeight: '700' }}>{u.setOrReps(Number(s.weight), s.reps, repsModeOf(we.exercises))}</Text>
                     <MaterialCommunityIcons
                       name={s.completed ? 'check-circle' : 'circle-outline'}
                       size={22}

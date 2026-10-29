@@ -13,7 +13,10 @@ import { Card } from '../src/components/ui';
 import { useWorkouts } from '../src/hooks/useWorkouts';
 import { useUnits } from '../src/hooks/useUnits';
 import { previousByExercise, workoutToDraftExercises, type PrevSet } from '../src/lib/history';
+import { WorkoutTimer } from '../src/components/WorkoutTimer';
+import { formatDuration } from '../src/lib/units';
 import { useDraftStore } from '../src/store/draft';
+import { useElapsedSeconds, useTimerStore } from '../src/store/timer';
 import { colors, getScheme, useScheme } from '../src/theme';
 import type { DraftExercise, Exercise } from '../src/types';
 
@@ -38,6 +41,9 @@ export default function ActiveWorkout() {
   const { session } = useAuth();
   const { bottom } = useSafeAreaInsets(); // keeps the save bar above Android's gesture/nav bar
   const [picker, setPicker] = useState(false);
+  const [timerOpen, setTimerOpen] = useState(false);
+  const timerSeconds = useElapsedSeconds();
+  const timerRunning = useTimerStore((s) => s.startedAt != null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -50,9 +56,28 @@ export default function ActiveWorkout() {
   if (!draft) return <Redirect href="/" />;
 
   const onPick = (ex: Exercise) => {
-    store.addExercise(ex.id, ex.name, prev.get(ex.id)?.length ?? 3, !!ex.reps_only);
+    // a timed exercise (a run, a plank) is usually one long set
+    store.addExercise(ex.id, ex.name, prev.get(ex.id)?.length ?? (ex.timed ? 1 : 3), ex.timed ? 'time' : !!ex.reps_only);
     setPicker(false);
   };
+
+  /** Drop the stopwatch time into a timed exercise: the first empty set, or a new one. */
+  const applyTimerTo = (exKey: string, seconds: number) => {
+    if (seconds <= 0) return;
+    useDraftStore.setState({
+      draft: {
+        ...draft,
+        exercises: draft.exercises.map((e) => {
+          if (e.key !== exKey) return e;
+          const emptyAt = e.sets.findIndex((s) => !(Number(s.reps) > 0));
+          const filled = { reps: String(seconds), completed: true };
+          if (emptyAt >= 0) return { ...e, sets: e.sets.map((s, i) => (i === emptyAt ? { ...s, ...filled } : s)) };
+          return { ...e, sets: [...e.sets, { key: `${e.key}-${e.sets.length}-${Date.now()}`, weight: '', ...filled }] };
+        }),
+      },
+    });
+  };
+  const timedExercises = draft.exercises.filter((e) => e.repsOnly === 'time').map((e) => ({ key: e.key, name: e.name }));
 
   const copyLast = () => {
     if (!lastWorkout) return;
@@ -124,7 +149,7 @@ export default function ActiveWorkout() {
         <Button textColor={colors.danger} onPress={discard}>Discard</Button>
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 160 + bottom }} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 220 + bottom }} keyboardShouldPersistTaps="handled">
         <StatusBanner />
         {draft.exercises.length === 0 && (
           <Card style={{ alignItems: 'center', gap: 12 }}>
@@ -160,6 +185,17 @@ export default function ActiveWorkout() {
       >
         {error && <Text style={{ color: colors.danger, textAlign: 'center' }}>{error}</Text>}
         <Button
+          mode="outlined"
+          icon="timer-outline"
+          onPress={() => setTimerOpen(true)}
+          textColor={timerRunning ? colors.accent : colors.text}
+          contentStyle={{ height: 46 }}
+          style={{ borderRadius: 16, borderColor: timerRunning ? colors.accent : colors.border }}
+          accessibilityLabel="Open timer"
+        >
+          {timerSeconds > 0 || timerRunning ? `Timer  ${formatDuration(timerSeconds)}` : 'Timer'}
+        </Button>
+        <Button
           mode="contained"
           icon="check"
           loading={saving}
@@ -174,6 +210,12 @@ export default function ActiveWorkout() {
       </View>
 
       <ExercisePicker visible={picker} onClose={() => setPicker(false)} onPick={onPick} />
+      <WorkoutTimer
+        visible={timerOpen}
+        onClose={() => setTimerOpen(false)}
+        timedExercises={timedExercises}
+        onUseTime={applyTimerTo}
+      />
     </SafeAreaView>
   );
 }
@@ -182,6 +224,7 @@ function ExerciseCard({ ex, prev }: { ex: DraftExercise; prev: PrevSet[] }) {
   const input = makeInput();
   const { addSet, removeSet, updateSet, removeExercise } = useDraftStore();
   const u = useUnits();
+  const timed = ex.repsOnly === 'time';
   const confirmRemove = () =>
     showDialog(`Remove ${ex.name}?`, undefined, [
       { text: 'Cancel', style: 'cancel' },
@@ -199,7 +242,7 @@ function ExerciseCard({ ex, prev }: { ex: DraftExercise; prev: PrevSet[] }) {
         <Text style={{ width: 24, color: colors.muted, fontSize: 12 }}>SET</Text>
         <Text style={{ width: 96, color: colors.muted, fontSize: 12 }}>LAST WORKOUT</Text>
         <Text style={{ flex: 1, color: colors.muted, fontSize: 12, textAlign: 'center' }}>
-          {ex.repsOnly ? 'TODAY  (REPS)' : `TODAY  (${u.label.toUpperCase()} × REPS)`}
+          {timed ? 'TODAY  (MIN : SEC)' : ex.repsOnly ? 'TODAY  (REPS)' : `TODAY  (${u.label.toUpperCase()} × REPS)`}
         </Text>
       </View>
 
@@ -240,16 +283,50 @@ function ExerciseCard({ ex, prev }: { ex: DraftExercise; prev: PrevSet[] }) {
                   <Text style={{ color: colors.muted, fontSize: 18 }}>×</Text>
                 </>
               )}
-              <TextInput
-                style={[input, { minWidth: ex.repsOnly ? 120 : 56 }]}
-                value={s.reps}
-                onChangeText={(t) => updateSet(ex.key, s.key, { reps: t.replace(/[^0-9]/g, '') })}
-                keyboardType="number-pad"
-                placeholder="reps"
-                placeholderTextColor={colors.muted}
-                selectTextOnFocus
-                accessibilityLabel={`Set ${i + 1} reps`}
-              />
+              {timed ? (
+                <>
+                  <TextInput
+                    style={[input, { minWidth: 64 }]}
+                    value={s.reps === '' ? '' : String(Math.floor((Number(s.reps) || 0) / 60))}
+                    onChangeText={(t) => {
+                      const m = t.replace(/[^0-9]/g, '');
+                      const total = (Number(m) || 0) * 60 + ((Number(s.reps) || 0) % 60);
+                      updateSet(ex.key, s.key, { reps: m === '' && total === 0 ? '' : String(total) });
+                    }}
+                    keyboardType="number-pad"
+                    placeholder="min"
+                    placeholderTextColor={colors.muted}
+                    selectTextOnFocus
+                    accessibilityLabel={`Set ${i + 1} minutes`}
+                  />
+                  <Text style={{ color: colors.muted, fontSize: 18 }}>:</Text>
+                  <TextInput
+                    style={[input, { minWidth: 64 }]}
+                    value={s.reps === '' ? '' : String((Number(s.reps) || 0) % 60).padStart(2, '0')}
+                    onChangeText={(t) => {
+                      const sec = t.replace(/[^0-9]/g, '').slice(-3);
+                      const total = Math.floor((Number(s.reps) || 0) / 60) * 60 + (Number(sec) || 0);
+                      updateSet(ex.key, s.key, { reps: sec === '' && total === 0 ? '' : String(total) });
+                    }}
+                    keyboardType="number-pad"
+                    placeholder="sec"
+                    placeholderTextColor={colors.muted}
+                    selectTextOnFocus
+                    accessibilityLabel={`Set ${i + 1} seconds`}
+                  />
+                </>
+              ) : (
+                <TextInput
+                  style={[input, { minWidth: ex.repsOnly ? 120 : 56 }]}
+                  value={s.reps}
+                  onChangeText={(t) => updateSet(ex.key, s.key, { reps: t.replace(/[^0-9]/g, '') })}
+                  keyboardType="number-pad"
+                  placeholder="reps"
+                  placeholderTextColor={colors.muted}
+                  selectTextOnFocus
+                  accessibilityLabel={`Set ${i + 1} reps`}
+                />
+              )}
             </View>
             <Pressable
               onPress={() => updateSet(ex.key, s.key, { completed: !s.completed })}

@@ -13,7 +13,7 @@ export function draftToLocal(draft: Draft, unit: Unit, id: string, ownerId: stri
     .map((ex) => ({
       exerciseId: ex.exerciseId,
       name: ex.name,
-      repsOnly: !!ex.repsOnly,
+      repsOnly: ex.repsOnly || false,
       sets: ex.sets
         .filter((s) => s.completed || num(s.reps) > 0 || num(s.weight) > 0)
         .map((s) => ({ weight: toLb(num(s.weight), unit), reps: Math.round(num(s.reps)), completed: s.completed })),
@@ -43,7 +43,7 @@ export function localToRow(w: LocalWorkout): WorkoutRow {
       id: `${w.id}:${i}`,
       position: i + 1,
       exercise_id: ex.exerciseId,
-      exercises: { name: ex.name, reps_only: !!ex.repsOnly },
+      exercises: { name: ex.name, reps_only: !!ex.repsOnly, timed: ex.repsOnly === 'time' },
       workout_sets: ex.sets.map((s, j) => ({
         id: `${w.id}:${i}:${j}`,
         exercise_id: ex.exerciseId,

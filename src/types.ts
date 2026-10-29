@@ -6,6 +6,8 @@ export type Exercise = {
   is_custom: boolean;
   /** bodyweight exercise: logged with reps only (no weight) */
   reps_only?: boolean;
+  /** timed exercise (running, plank...): a set's `reps` holds seconds. Always also reps_only. */
+  timed?: boolean;
 };
 
 /** A set as stored/used in stats. */
@@ -34,8 +36,8 @@ export type DraftExercise = {
   exerciseId: string;
   name: string;
   sets: DraftSet[];
-  /** reps-only (bodyweight) exercise: no weight box */
-  repsOnly?: boolean;
+  /** reps-only (bodyweight) exercise: no weight box; 'time' = timed set (minutes + seconds) */
+  repsOnly?: boolean | 'time';
 };
 
 export type Draft = {
@@ -61,7 +63,7 @@ export type WorkoutExerciseRow = {
   id: string;
   position: number;
   exercise_id: string;
-  exercises: { name: string; reps_only?: boolean } | null;
+  exercises: { name: string; reps_only?: boolean; timed?: boolean } | null;
   workout_sets: WorkoutSetRow[];
 };
 
@@ -79,7 +81,7 @@ export type WorkoutRow = {
 /** A saved set; weight is in pounds (the canonical stored unit). */
 export type LocalSet = { weight: number; reps: number; completed: boolean };
 
-export type LocalWorkoutExercise = { exerciseId: string; name: string; sets: LocalSet[]; repsOnly?: boolean };
+export type LocalWorkoutExercise = { exerciseId: string; name: string; sets: LocalSet[]; repsOnly?: boolean | 'time' };
 
 /**
  * A workout saved on this device that has not been uploaded yet.

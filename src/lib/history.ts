@@ -1,5 +1,5 @@
 import { volume } from './stats';
-import { toDisplay, trimNum, type Unit } from './units';
+import { repsModeOf, toDisplay, trimNum, type Unit } from './units';
 import type { DraftExercise, FlatSet, WorkoutRow } from '../types';
 
 export const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
@@ -61,7 +61,7 @@ export function workoutToDraftExercises(w: WorkoutRow, keepCompleted = false, un
       key: uid(),
       exerciseId: we.exercise_id,
       name: we.exercises?.name ?? 'Exercise',
-      repsOnly: !!we.exercises?.reps_only,
+      repsOnly: repsModeOf(we.exercises),
       sets: [...we.workout_sets]
         .sort((a, b) => a.set_order - b.set_order)
         .map((s) => ({
@@ -81,10 +81,22 @@ export function exerciseRepsOnly(workouts: WorkoutRow[]): Set<string> {
   return out;
 }
 
+/** Ids of timed exercises (running, planks...): their "reps" are seconds. Always a subset of exerciseRepsOnly. */
+export function exerciseTimed(workouts: WorkoutRow[]): Set<string> {
+  const out = new Set<string>();
+  for (const w of workouts)
+    for (const we of w.workout_exercises) if (repsModeOf(we.exercises) === 'time') out.add(we.exercise_id);
+  return out;
+}
+
 export function workoutTotals(w: WorkoutRow) {
   const sets = w.workout_exercises.flatMap((we) =>
     we.workout_sets.map((s) => ({ weight: Number(s.weight), reps: s.reps, completed: s.completed })),
   );
   const done = sets.filter((s) => s.completed);
-  return { volume: volume(sets), sets: done.length, reps: done.reduce((n, s) => n + s.reps, 0) };
+  // A timed set's "reps" are seconds: keep them out of the rep count and report them as time instead.
+  const timed = w.workout_exercises.filter((we) => repsModeOf(we.exercises) === 'time');
+  const seconds = timed.reduce(
+    (n, we) => n + we.workout_sets.filter((s) => s.completed).reduce((m, s) => m + s.reps, 0), 0);
+  return { volume: volume(sets), sets: done.length, reps: done.reduce((n, s) => n + s.reps, 0) - seconds, seconds };
 }

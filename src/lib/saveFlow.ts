@@ -18,7 +18,7 @@ async function uploadCustomExercises(userId: string, only?: Set<string>): Promis
   const remap = new Map<string, string>();
   for (const ex of store.customExercises.filter((e) => e.ownerId === userId && (!only || only.has(e.id)))) {
     try {
-      await createExercise(ex.name, ex.muscle_group, userId, ex.id, !!ex.reps_only);
+      await createExercise(ex.name, ex.muscle_group, userId, ex.id, ex.timed ? 'time' : !!ex.reps_only);
     } catch (e) {
       if ((e as { code?: string }).code !== '23505') throw e;
       // Same name already exists on the server (or this exact id was uploaded before).

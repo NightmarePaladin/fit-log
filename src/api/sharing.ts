@@ -4,7 +4,7 @@ export type SharedWorkout = {
   name: string | null;
   completed_at: string | null;
   owner_name: string | null;
-  exercises: { name: string; reps_only: boolean; sets: { weight: number; reps: number; completed: boolean }[] }[];
+  exercises: { name: string; reps_only: boolean; timed?: boolean; sets: { weight: number; reps: number; completed: boolean }[] }[];
 };
 
 /** The existing share-link token for one of my workouts, if I have shared it. */

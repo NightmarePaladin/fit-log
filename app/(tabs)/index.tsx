@@ -9,7 +9,8 @@ import { Card, Empty, ErrorBanner, SectionTitle, Stat } from '../../src/componen
 import { useUnits } from '../../src/hooks/useUnits';
 import { useWorkouts } from '../../src/hooks/useWorkouts';
 import { formatDay, weekKey } from '../../src/lib/dates';
-import { exerciseNames, exerciseRepsOnly, flattenWorkouts, workoutTotals } from '../../src/lib/history';
+import { exerciseNames, exerciseRepsOnly, exerciseTimed, flattenWorkouts, workoutTotals } from '../../src/lib/history';
+import { formatDuration } from '../../src/lib/units';
 import { compareWeeks, detectPRs, fmtPct } from '../../src/lib/stats';
 import { useDraftStore, useHasHydrated } from '../../src/store/draft';
 import { GUEST } from '../../src/store/local';
@@ -37,7 +38,7 @@ export default function Dashboard() {
     const summary = exIds
       .map((id) => ({ id, name: names.get(id) ?? 'Exercise', cmp: compareWeeks(flat, id) }))
       .filter((r) => r.cmp.previous.bestWeight != null && r.cmp.current.bestWeight != null);
-    return { names, repsOnlyIds: exerciseRepsOnly(workouts), weekWorkouts, weekVolume, prs, summary, last: workouts[0] };
+    return { names, repsOnlyIds: exerciseRepsOnly(workouts), timedIds: exerciseTimed(workouts), weekWorkouts, weekVolume, prs, summary, last: workouts[0] };
   }, [workouts]);
 
   const startWorkout = () => {
@@ -106,7 +107,9 @@ export default function Dashboard() {
               <Text style={{ color: colors.accent, marginTop: 4, fontWeight: '700' }}>
                 {workoutTotals(data.last).volume > 0
                   ? `${u.vol(workoutTotals(data.last).volume)} ${u.label} total`
-                  : `${workoutTotals(data.last).reps} reps total`}
+                  : workoutTotals(data.last).reps === 0 && workoutTotals(data.last).seconds > 0
+                    ? `${formatDuration(workoutTotals(data.last).seconds)} total time`
+                    : `${workoutTotals(data.last).reps} reps total`}
               </Text>
             </Card>
           </Pressable>
@@ -125,7 +128,7 @@ export default function Dashboard() {
                   <Text style={{ color: colors.muted, fontSize: 12 }}>{formatDay(pr.completedAt)}</Text>
                 </View>
                 <Text style={{ color: colors.gold, fontWeight: '800', fontSize: 17 }}>
-                  {u.setOrReps(pr.weight, pr.reps, data.repsOnlyIds.has(pr.exerciseId))}
+                  {u.setOrReps(pr.weight, pr.reps, data.timedIds.has(pr.exerciseId) ? 'time' : data.repsOnlyIds.has(pr.exerciseId))}
                 </Text>
               </View>
             ))}
@@ -142,7 +145,9 @@ export default function Dashboard() {
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontWeight: '700' }}>{r.name}</Text>
                   <Text style={{ color: colors.muted, fontSize: 12 }}>
-                    {data.repsOnlyIds.has(r.id)
+                    {data.timedIds.has(r.id)
+                      ? `${formatDuration(r.cmp.previous.maxReps ?? 0)} → ${formatDuration(r.cmp.current.maxReps ?? 0)} (longest)`
+                      : data.repsOnlyIds.has(r.id)
                       ? `${r.cmp.previous.maxReps} → ${r.cmp.current.maxReps} reps (best set)`
                       : `${u.fmt(r.cmp.previous.bestWeight!)} → ${u.fmt(r.cmp.current.bestWeight!)} ${u.label}${
                           r.cmp.likeForLike ? ` at ${r.cmp.current.bestReps} reps` : ' (reps differ)'
@@ -159,7 +164,9 @@ export default function Dashboard() {
                         : colors.muted,
                   }}
                 >
-                  {data.repsOnlyIds.has(r.id)
+                  {data.timedIds.has(r.id)
+                    ? `${(r.cmp.repsDelta ?? 0) > 0 ? '+' : (r.cmp.repsDelta ?? 0) < 0 ? '-' : ''}${formatDuration(Math.abs(r.cmp.repsDelta ?? 0))}`
+                    : data.repsOnlyIds.has(r.id)
                     ? `${(r.cmp.repsDelta ?? 0) > 0 ? '+' : ''}${r.cmp.repsDelta ?? 0} reps`
                     : r.cmp.strengthChangePct != null
                       ? fmtPct(r.cmp.strengthChangePct)

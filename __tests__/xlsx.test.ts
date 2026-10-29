@@ -106,7 +106,7 @@ describe('plan and history exports', () => {
     expect(summary.rows[1][1]).toBe('Earlier');
     expect(summary.rows[2][1]).toBe('Later');
     // Earlier: squat 225x10 completed (2250) + pushup 20 reps; the 8-rep set is not completed
-    expect(summary.rows[1].slice(2)).toEqual([2, 2, 30, 2250]);
+    expect(summary.rows[1].slice(2)).toEqual([2, 2, 30, '', 2250]);
     expect(sets.rows.length).toBe(1 + 2 * 3);
     const incomplete = sets.rows.find((r) => r[6] === 'No')!;
     expect(incomplete[7]).toBe(0);
