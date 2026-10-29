@@ -43,6 +43,8 @@ function PickerBody({ onClose, onPick }: Omit<Props, 'visible'>) {
 
   // Results from the free wger exercise library (shown under your own list once you type 3+ letters)
   const [lib, setLib] = useState<{ term: string; items: WgerExercise[]; failed: boolean } | null>(null);
+  // Signed-in and offline: skip the library. Without an account the "offline" flag only means no account, so still try it.
+  const libOff = !!userId && offline;
 
   useEffect(() => {
     // Works with no connection: falls back to the built-in library plus custom exercises saved on this device.
@@ -57,7 +59,7 @@ function PickerBody({ onClose, onPick }: Omit<Props, 'visible'>) {
 
   useEffect(() => {
     const term = query.trim();
-    if (term.length < 3 || offline) return;
+    if (term.length < 3 || libOff) return;
     const ctrl = new AbortController();
     const timer = setTimeout(() => {
       searchWger(term, ctrl.signal)
@@ -70,7 +72,7 @@ function PickerBody({ onClose, onPick }: Omit<Props, 'visible'>) {
       clearTimeout(timer);
       ctrl.abort();
     };
-  }, [query, offline]);
+  }, [query, libOff]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -79,7 +81,7 @@ function PickerBody({ onClose, onPick }: Omit<Props, 'visible'>) {
 
   const typed = query.trim();
   const exactMatch = all.some((e) => e.name.toLowerCase() === typed.toLowerCase());
-  const libTerm = typed.length >= 3 && !offline ? typed : null;
+  const libTerm = typed.length >= 3 && !libOff ? typed : null;
   const libLoading = libTerm !== null && lib?.term !== libTerm;
   const taken = new Set(all.map((e) => e.name.toLowerCase()));
   const libItems = libTerm !== null && lib?.term === libTerm ? lib.items.filter((i) => !taken.has(i.name.toLowerCase())) : [];
