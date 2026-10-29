@@ -67,8 +67,16 @@ export function waltErrorMessage(e: unknown): string {
   if (raw.includes('too_many_active_sessions')) return 'You already have 3 active sessions. End one first.';
   if (raw.includes('host_must_end')) return 'You started this session, so you end it for everyone instead of leaving.';
   if (raw.includes('not_host_or_not_active')) return 'Only the person who started the session can end it.';
-  if (raw.includes('not authenticated')) return 'Please sign in first.';
+  if (raw.includes('not authenticated') || isSignedOutError(e)) {
+    return 'You are signed out, or no longer part of this session. Sign in again to keep going.';
+  }
   return raw;
+}
+
+/** The database refuses a request that has no signed-in user (or reads a session you are not in). Not worth retrying. */
+export function isSignedOutError(e: unknown): boolean {
+  const err = e as { code?: string; message?: string } | null;
+  return err?.code === '42501' || /permission denied|JWT expired|invalid JWT/i.test(err?.message ?? '');
 }
 
 /** One person's sets for one exercise, in order. */

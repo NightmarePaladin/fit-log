@@ -2,7 +2,7 @@ import { draftToLocal, localToRow } from '../src/lib/localData';
 import { workoutTotals } from '../src/lib/history';
 import { makeUnitFormat } from '../src/lib/units';
 import {
-  buildWaltDraft, describeWaltSets, mergeMine, modeOfExercise, normalizeCode, repsModeOfWalt, setsOf, toEditSets,
+  buildWaltDraft, describeWaltSets, isSignedOutError, mergeMine, modeOfExercise, normalizeCode, repsModeOfWalt, setsOf, toEditSets,
   waltErrorMessage, type EditSet, type WaltExercise, type WaltSet,
 } from '../src/lib/walt';
 
@@ -130,5 +130,16 @@ describe('buildWaltDraft', () => {
     expect(t.volume).toBe(1350);
     expect(t.seconds).toBe(1500);
     expect(row.workout_exercises.map((e) => e.exercises?.timed)).toEqual([false, true, false]);
+  });
+});
+
+describe('signed-out errors', () => {
+  it('recognises the database refusing a signed-out request and explains it plainly', () => {
+    const denied = { code: '42501', message: 'permission denied for table walt_sessions' };
+    expect(isSignedOutError(denied)).toBe(true);
+    expect(isSignedOutError(new Error('JWT expired'))).toBe(true);
+    expect(isSignedOutError(new Error('session_full'))).toBe(false);
+    expect(waltErrorMessage(denied)).toBe('You are signed out, or no longer part of this session. Sign in again to keep going.');
+    expect(waltErrorMessage(denied)).not.toMatch(/walt_sessions/);
   });
 });

@@ -4,7 +4,7 @@ import {
 } from '../api/walt';
 import { newId } from '../lib/id';
 import type { Unit } from '../lib/units';
-import { mergeMine, waltErrorMessage, type EditSet, type WaltMode, type WaltSnapshot } from '../lib/walt';
+import { isSignedOutError, mergeMine, waltErrorMessage, type EditSet, type WaltMode, type WaltSnapshot } from '../lib/walt';
 
 const POLL_MS = 8000; // safety net: the live socket does the real work, this catches anything it drops
 const SAVE_DELAY_MS = 600; // wait for a pause in typing before sending my sets
@@ -28,6 +28,7 @@ export function useWaltSession(sessionId: string, userId: string, unit: Unit) {
   const flushing = useRef<Promise<void> | null>(null);
   const unitRef = useRef(unit);
   const ended = useRef(false);
+  const stopped = useRef(false); // signed out / not in this session: no point asking again every few seconds
 
   useEffect(() => {
     mineRef.current = mine;
@@ -42,6 +43,7 @@ export function useWaltSession(sessionId: string, userId: string, unit: Unit) {
       setMine((prev) => mergeMine(prev, s, userId, unitRef.current, newId));
       setError(null);
     } catch (e) {
+      if (isSignedOutError(e)) stopped.current = true;
       setError(waltErrorMessage(e));
     }
   }, [sessionId, userId]);
@@ -98,6 +100,7 @@ export function useWaltSession(sessionId: string, userId: string, unit: Unit) {
     };
     const stop = subscribeToSession(sessionId, scheduleRefresh);
     const poll = setInterval(() => {
+      if (stopped.current) return;
       refresh();
       if (dirty.current.size > 0 || removed.current.size > 0) flush().catch(() => {});
     }, POLL_MS);
