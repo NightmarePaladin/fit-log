@@ -11,9 +11,11 @@ import { visibleTo } from '../src/lib/localData';
 import { useDraftStore } from '../src/store/draft';
 import { GUEST, useLocalStore } from '../src/store/local';
 import { colors, useScheme } from '../src/theme';
+import { pageWidth, useDesktop } from '../src/lib/layout';
 
 export default function Settings() {
   useScheme(); // re-render when the appearance changes
+  const desktop = useDesktop();
   const router = useRouter();
   const { session, isGuest, exitOfflineMode, signOut, unit, setUnit } = useAuth();
   const waiting = useLocalStore((s) => visibleTo(s.workouts, session?.user.id ?? null).length);
@@ -72,7 +74,7 @@ export default function Settings() {
         <Text variant="titleLarge" style={{ fontWeight: '800' }}>Settings</Text>
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 40 }}>
+      <ScrollView contentContainerStyle={{ padding: desktop ? 28 : 16, ...pageWidth(desktop), gap: 14, paddingBottom: 40 }}>
         <SectionTitle>Appearance</SectionTitle>
         <Card style={{ gap: 10 }}>
           <SegmentedButtons
@@ -87,7 +89,7 @@ export default function Settings() {
             ]}
           />
           <Text style={{ color: colors.muted, fontSize: 12 }}>
-            {themeMode === 'system' ? 'Follows your device’s light or dark setting.' : 'Choose how Fit Lift looks.'}
+            {themeMode === 'system' ? 'Follows your device’s light or dark setting.' : 'Choose how Fit Log looks.'}
           </Text>
         </Card>
 

@@ -5,12 +5,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { friendlyAuthError, useAuth } from '../src/auth/AuthProvider';
 import { isValidEmail, signUpProblem } from '../src/lib/validation';
+import { pageWidth, useDesktop } from '../src/lib/layout';
 import { colors, useScheme } from '../src/theme';
 
 type Mode = 'signin' | 'signup';
 
 export default function Login() {
   useScheme(); // re-render when the appearance changes
+  const desktop = useDesktop();
   const {
     signInWithGoogle, signInWithPassword, signUpWithPassword, resendConfirmation, sendPasswordReset, enterOfflineMode,
   } = useAuth();
@@ -90,7 +92,7 @@ export default function Login() {
           accessibilityRole="header"
           style={{ fontSize: 40, lineHeight: 46, fontWeight: '900', letterSpacing: -0.5, color: colors.text }}
         >
-          Fit Lift
+          Fit Log
         </Text>
         <View
           style={{
@@ -107,7 +109,7 @@ export default function Login() {
 
   if (pendingEmail) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg, padding: 24, justifyContent: 'center' }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg, padding: 24, justifyContent: 'center', ...pageWidth(desktop, 440) }}>
         {header}
         <View style={{ gap: 12, alignItems: 'center' }}>
           <MaterialCommunityIcons name="email-check-outline" size={48} color={colors.success} />
@@ -137,7 +139,7 @@ export default function Login() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 24, justifyContent: 'center' }} keyboardShouldPersistTaps="handled">
+        <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 24, justifyContent: 'center', ...pageWidth(desktop, 440) }} keyboardShouldPersistTaps="handled">
           {header}
 
           <SegmentedButtons

@@ -10,6 +10,7 @@ import { useUnits } from '../../src/hooks/useUnits';
 import { useWorkouts } from '../../src/hooks/useWorkouts';
 import { formatDay, weekKey } from '../../src/lib/dates';
 import { exerciseNames, exerciseRepsOnly, exerciseTimed, flattenWorkouts, workoutTotals } from '../../src/lib/history';
+import { pageWidth, useDesktop } from '../../src/lib/layout';
 import { formatDuration } from '../../src/lib/units';
 import { compareWeeks, detectPRs, fmtPct } from '../../src/lib/stats';
 import { useDraftStore, useHasHydrated } from '../../src/store/draft';
@@ -26,6 +27,7 @@ export default function Dashboard() {
   const { draft, ownerId, start } = useDraftStore();
   const userId = session?.user.id ?? GUEST;
   const hasDraft = hydrated && !!draft && ownerId === userId;
+  const desktop = useDesktop();
 
   const data = useMemo(() => {
     const flat = flattenWorkouts(workouts);
@@ -49,7 +51,7 @@ export default function Dashboard() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
       <ScrollView
-        contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 32 }}
+        contentContainerStyle={{ padding: desktop ? 28 : 16, gap: 14, paddingBottom: 32, ...pageWidth(desktop, 1000) }}
         refreshControl={<RefreshControl refreshing={false} onRefresh={refresh} tintColor={colors.accent} />}
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -90,6 +92,9 @@ export default function Dashboard() {
         {error && <ErrorBanner message={error} onRetry={refresh} />}
         {loading && <ActivityIndicator color={colors.accent} />}
 
+        {/* Phone: one column. Desktop: two columns side by side. */}
+        <View style={{ flexDirection: desktop ? 'row' : 'column', gap: 14, alignItems: 'flex-start' }}>
+        <View style={desktop ? { flex: 1, gap: 14, minWidth: 0 } : { gap: 14, alignSelf: 'stretch' }}>
         <Card style={{ flexDirection: 'row', gap: 12 }}>
           <Stat label="This week" value={String(data.weekWorkouts.length)} unit="workouts" tint={colors.blue} />
           <Stat label="Weight lifted" value={u.vol(data.weekVolume)} unit={u.label} />
@@ -117,6 +122,8 @@ export default function Dashboard() {
           !loading && <Card><Empty title="No workouts yet" hint="Tap Start workout to log your first session." /></Card>
         )}
 
+        </View>
+        <View style={desktop ? { flex: 1, gap: 14, minWidth: 0 } : { gap: 14, alignSelf: 'stretch' }}>
         <SectionTitle>Recent personal records</SectionTitle>
         {data.prs.length > 0 ? (
           <Card style={{ gap: 10 }}>
@@ -183,6 +190,8 @@ export default function Dashboard() {
             </Card>
           )
         )}
+        </View>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );

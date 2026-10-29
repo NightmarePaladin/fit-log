@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { FlatList, Modal, Pressable, View } from 'react-native';
+import { FlatList, Pressable, View } from 'react-native';
+import { ResponsiveModal } from './ResponsiveModal';
 import { ActivityIndicator, Button, IconButton, SegmentedButtons, Text, TextInput } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../auth/AuthProvider';
@@ -16,10 +17,10 @@ type Props = {
 
 export function ExercisePicker({ visible, onClose, onPick }: Props) {
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+    <ResponsiveModal visible={visible} onClose={onClose}>
       {/* Mounted only while open, so search/error/loading state resets on every open. */}
       {visible ? <PickerBody onClose={onClose} onPick={onPick} /> : null}
-    </Modal>
+    </ResponsiveModal>
   );
 }
 

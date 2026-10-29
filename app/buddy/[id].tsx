@@ -10,11 +10,13 @@ import { formatDay, weekKey } from '../../src/lib/dates';
 import { workoutTotals } from '../../src/lib/history';
 import { buildShareCard } from '../../src/lib/shareCard';
 import { colors, useScheme } from '../../src/theme';
+import { pageWidth, useDesktop } from '../../src/lib/layout';
 import type { WorkoutRow } from '../../src/types';
 
 /** A buddy's recent lifts. Read-only; the database only allows this while they share with you. */
 export default function BuddyLifts() {
   useScheme();
+  const desktop = useDesktop();
   const { id, name } = useLocalSearchParams<{ id: string; name?: string }>();
   const router = useRouter();
   const u = useUnits();
@@ -54,7 +56,7 @@ export default function BuddyLifts() {
         <Text variant="titleLarge" style={{ fontWeight: '800' }}>{buddyName}&apos;s lifts</Text>
       </View>
       <ScrollView
-        contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 40 }}
+        contentContainerStyle={{ padding: desktop ? 28 : 16, ...pageWidth(desktop), gap: 12, paddingBottom: 40 }}
         refreshControl={<RefreshControl refreshing={false} onRefresh={load} tintColor={colors.accent} />}
       >
         {!loaded && <ActivityIndicator color={colors.accent} />}

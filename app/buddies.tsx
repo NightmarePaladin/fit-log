@@ -13,9 +13,11 @@ import { shareBaseUrl } from '../src/lib/config';
 import { showDialog } from '../src/lib/dialog';
 import { copyText, shareText } from '../src/lib/shareOut';
 import { colors, useScheme } from '../src/theme';
+import { pageWidth, useDesktop } from '../src/lib/layout';
 
 export default function Buddies() {
   useScheme(); // re-render when the appearance changes
+  const desktop = useDesktop();
   const router = useRouter();
   const { session, exitOfflineMode } = useAuth();
   const me = session?.user.id ?? null;
@@ -71,7 +73,7 @@ export default function Buddies() {
   };
 
   const inviteMessage = (code: string) =>
-    `Join me on Fit Lift so we can see each other's lifts. Open Buddies, enter this code: ${code} (valid for 7 days). ${shareBaseUrl()}`;
+    `Join me on Fit Log so we can see each other's lifts. Open Buddies, enter this code: ${code} (valid for 7 days). ${shareBaseUrl()}`;
 
   const connect = () => {
     const code = codeInput.trim().toUpperCase();
@@ -122,7 +124,7 @@ export default function Buddies() {
         <IconButton icon="arrow-left" onPress={back} accessibilityLabel="Back" />
         <Text variant="titleLarge" style={{ fontWeight: '800' }}>Buddies</Text>
       </View>
-      <ScrollView contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={{ padding: desktop ? 28 : 16, ...pageWidth(desktop), gap: 14, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
         <Text style={{ color: colors.muted }}>
           Share your lifts with a gym buddy. Connect with an invite code and you can each see the other&apos;s workouts (read-only).
         </Text>

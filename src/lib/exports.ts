@@ -26,7 +26,7 @@ export function buildPlanSheet(w: WorkoutRow, u: UnitFormat): Sheet {
   const input = (): Cell => ({ v: null, style: 'input' });
   const rows: Cell[][] = [
     [{ v: `Workout plan: ${w.name || 'Workout'}`, style: 'title' }],
-    [{ v: `Based on your workout on ${isoDay(w.completed_at)}. Fill in the yellow cells, then log it in Fit Lift. Weights in ${u.label}.`, style: 'muted' }],
+    [{ v: `Based on your workout on ${isoDay(w.completed_at)}. Fill in the yellow cells, then log it in Fit Log. Weights in ${u.label}.`, style: 'muted' }],
     [],
     [
       header('Exercise'), header('Set'), header(`Last weight (${u.label})`), header('Last reps'),

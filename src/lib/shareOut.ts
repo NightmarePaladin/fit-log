@@ -40,7 +40,7 @@ export async function deliverFile(filename: string, bytes: Uint8Array, mime: str
 }
 
 /** Share plain text (or copy it where the browser can't share). */
-export async function shareText(message: string, title = 'Fit Lift'): Promise<ShareOutcome> {
+export async function shareText(message: string, title = 'Fit Log'): Promise<ShareOutcome> {
   if (Platform.OS === 'web') {
     const nav = navigator as Navigator & { share?: (d: { text?: string; title?: string }) => Promise<void> };
     if (nav.share) {
@@ -104,8 +104,8 @@ export function drawShareCardCanvas(card: ShareCardData): HTMLCanvasElement {
   // brand
   ctx.fillStyle = TEXT;
   ctx.font = font(84, '900');
-  ctx.fillText('Fit Lift', PAD, 150);
-  const brandW = ctx.measureText('Fit Lift').width;
+  ctx.fillText('Fit Log', PAD, 150);
+  const brandW = ctx.measureText('Fit Log').width;
   const ix = PAD + brandW + 28;
   const iy = 86;
   ctx.fillStyle = ACCENT;
@@ -170,7 +170,7 @@ export async function shareCardCanvasImage(card: ShareCardData, text?: string): 
   const blob: Blob = await new Promise((resolve, reject) =>
     canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('Could not create the picture.'))), 'image/png'),
   );
-  const file = new File([blob], 'fit-lift-workout.png', { type: 'image/png' });
+  const file = new File([blob], 'fit-log-workout.png', { type: 'image/png' });
   const nav = navigator as Navigator & {
     canShare?: (d: { files: File[] }) => boolean;
     share?: (d: { files?: File[]; text?: string; title?: string }) => Promise<void>;
@@ -183,6 +183,6 @@ export async function shareCardCanvasImage(card: ShareCardData, text?: string): 
       if (isAbort(e)) return 'cancelled';
     }
   }
-  downloadBlob(blob, 'fit-lift-workout.png');
+  downloadBlob(blob, 'fit-log-workout.png');
   return 'downloaded';
 }

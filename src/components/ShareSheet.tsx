@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { Modal, Platform, ScrollView, View } from 'react-native';
+import { Platform, ScrollView, View } from 'react-native';
+import { ResponsiveModal } from './ResponsiveModal';
 import { useRouter } from 'expo-router';
 import { Button, IconButton, Text } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -95,11 +96,11 @@ export function ShareSheet({ visible, onClose, workout }: Props) {
   const exportPlan = () =>
     run('plan', async () => {
       const bytes = buildXlsx([buildPlanSheet(workout, u)]);
-      outcomeNote(await deliverFile(`fit-lift-plan-${fileSafe(workout.name || 'workout')}.xlsx`, bytes, XLSX_MIME));
+      outcomeNote(await deliverFile(`fit-log-plan-${fileSafe(workout.name || 'workout')}.xlsx`, bytes, XLSX_MIME));
     });
 
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+    <ResponsiveModal visible={visible} onClose={onClose} maxWidth={560}>
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8 }}>
           <Text variant="titleLarge" style={{ flex: 1, fontWeight: '800', paddingLeft: 8 }}>Share workout</Text>
@@ -135,7 +136,7 @@ export function ShareSheet({ visible, onClose, workout }: Props) {
                   <Button compact icon="content-copy" onPress={() => run('link', async () => { await copyText(link); setMessage({ ok: true, text: 'Link copied.' }); })}>
                     Copy
                   </Button>
-                  <Button compact icon="share-variant" disabled={busy !== null} onPress={() => run('link', async () => outcomeNote(await shareText(`${owner}'s workout on Fit Lift: ${link}`)))}>
+                  <Button compact icon="share-variant" disabled={busy !== null} onPress={() => run('link', async () => outcomeNote(await shareText(`${owner}'s workout on Fit Log: ${link}`)))}>
                     Share link
                   </Button>
                   <Button compact icon="link-off" textColor={colors.danger} disabled={busy !== null} onPress={stopLink}>
@@ -166,6 +167,6 @@ export function ShareSheet({ visible, onClose, workout }: Props) {
           </View>
         </ScrollView>
       </SafeAreaView>
-    </Modal>
+    </ResponsiveModal>
   );
 }

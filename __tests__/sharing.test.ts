@@ -51,7 +51,7 @@ describe('share card and text', () => {
   });
   it('text includes the exercises, tagline and optional link', () => {
     const t = buildShareText(card, 'https://example.com/s/abc');
-    expect(t).toContain("Jay's workout on Fit Lift: Push Day");
+    expect(t).toContain("Jay's workout on Fit Log: Push Day");
     expect(t).toContain('• Barbell Bench Press: 2 × 10 @ 135 lb');
     expect(t).toContain('Log Lifts Fast.');
     expect(t.endsWith('https://example.com/s/abc')).toBe(true);

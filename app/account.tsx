@@ -7,9 +7,11 @@ import { friendlyAuthError, useAuth } from '../src/auth/AuthProvider';
 import { passwordProblem } from '../src/lib/validation';
 import { Card, SectionTitle } from '../src/components/ui';
 import { colors, useScheme } from '../src/theme';
+import { pageWidth, useDesktop } from '../src/lib/layout';
 
 export default function Account() {
   useScheme(); // re-render when the appearance changes
+  const desktop = useDesktop();
   const router = useRouter();
   const { session, exitOfflineMode, fullName, avatarUrl, updateProfile, deleteAccount, recovery, updatePassword } = useAuth();
   const [name, setName] = useState(fullName);
@@ -99,7 +101,7 @@ export default function Account() {
         <IconButton icon="cog" onPress={() => router.push('/settings')} accessibilityLabel="Settings" />
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={{ padding: desktop ? 28 : 16, ...pageWidth(desktop), gap: 14, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
         <View style={{ alignItems: 'center', gap: 8, marginVertical: 8 }}>
           {avatarUrl ? (
             <Image source={{ uri: avatarUrl }} style={{ width: 88, height: 88, borderRadius: 44 }} />

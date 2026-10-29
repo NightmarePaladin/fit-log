@@ -18,10 +18,12 @@ import { isNetworkError } from '../../src/lib/net';
 import { useDraftStore } from '../../src/store/draft';
 import { GUEST, useLocalStore } from '../../src/store/local';
 import { colors, useScheme } from '../../src/theme';
+import { pageWidth, useDesktop } from '../../src/lib/layout';
 import type { WorkoutRow } from '../../src/types';
 
 export default function WorkoutDetail() {
   useScheme(); // re-render when the appearance changes
+  const desktop = useDesktop();
   const { id, saved } = useLocalSearchParams<{ id: string; saved?: string }>();
   const router = useRouter();
   const { session } = useAuth();
@@ -123,7 +125,7 @@ export default function WorkoutDetail() {
         <Text variant="titleLarge" style={{ flex: 1, fontWeight: '800' }}>{w?.name ?? 'Workout'}</Text>
         {w && <IconButton icon="share-variant" onPress={() => setShareOpen(true)} accessibilityLabel="Share workout" />}
       </View>
-      <ScrollView contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 40 }}>
+      <ScrollView contentContainerStyle={{ padding: desktop ? 28 : 16, ...pageWidth(desktop), gap: 14, paddingBottom: 40 }}>
         {saved === 'queued' && (
           <View
             style={{

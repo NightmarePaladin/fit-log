@@ -12,6 +12,7 @@ import { exerciseNames, exerciseRepsOnly, exerciseTimed, flattenWorkouts } from 
 import { formatDuration } from '../../src/lib/units';
 import { compareWeeks, detectPRs, fmtNum, fmtPct, weeklySeries } from '../../src/lib/stats';
 import { colors, useScheme } from '../../src/theme';
+import { PAGE_MAX_WIDTH, SHELL_MAX_WIDTH, pageWidth, useDesktop } from '../../src/lib/layout';
 
 function Delta({ value, suffix = '', fmt }: { value: number | null; suffix?: string; fmt?: (n: number) => string }) {
   if (value == null) return <Text style={{ color: colors.muted, fontWeight: '800' }}>—</Text>;
@@ -39,6 +40,7 @@ function Pair({ label, prev, cur, unit, fmt = fmtNum }: { label: string; prev: n
 
 export default function Progress() {
   useScheme(); // re-render when the appearance changes
+  const desktop = useDesktop();
   const { workouts, loading, error, refresh } = useWorkouts();
   const { width } = useWindowDimensions();
   const u = useUnits();
@@ -64,7 +66,9 @@ export default function Progress() {
 
   const weekStart = startOfWeek(new Date());
   const range = (d: Date) => d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-  const chartWidth = width - 32 - 32 - 40;
+  // Desktop: the page is a centered column next to the sidebar, so size the chart from that, not the window.
+  const pageW = desktop ? Math.min(PAGE_MAX_WIDTH, Math.min(width, SHELL_MAX_WIDTH) - 210) - 56 : width - 32;
+  const chartWidth = pageW - 32 - 40;
 
   const toPoints = (key: 'bestWeight' | 'volume' | 'maxReps' | 'totalReps') =>
     series
@@ -104,11 +108,11 @@ export default function Progress() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
-      <Text style={{ fontSize: 30, fontWeight: '800', paddingHorizontal: 16, paddingTop: 8 }}>Progress</Text>
-      <View style={{ paddingHorizontal: 16, paddingTop: 8 }}>
+      <Text style={{ fontSize: 30, fontWeight: '800', paddingHorizontal: desktop ? 28 : 16, paddingTop: 8, ...pageWidth(desktop) }}>Progress</Text>
+      <View style={{ paddingHorizontal: desktop ? 28 : 16, paddingTop: 8, ...pageWidth(desktop) }}>
         <StatusBanner />
       </View>
-      <View style={{ height: 56 }}>
+      <View style={{ height: 56, ...pageWidth(desktop) }}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ padding: 12, gap: 8 }}>
           <Chip selected={effective === null} onPress={() => setSelected(null)}>All exercises</Chip>
           {exerciseList.map(([id, name]) => (
@@ -118,7 +122,7 @@ export default function Progress() {
       </View>
 
       <ScrollView
-        contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 40 }}
+        contentContainerStyle={{ padding: desktop ? 28 : 16, ...pageWidth(desktop), gap: 14, paddingBottom: 40 }}
         refreshControl={<RefreshControl refreshing={false} onRefresh={refresh} tintColor={colors.accent} />}
       >
         {loading && <ActivityIndicator color={colors.accent} />}

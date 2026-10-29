@@ -14,9 +14,11 @@ import { useUnits } from '../../src/hooks/useUnits';
 import { exerciseNames, workoutTotals } from '../../src/lib/history';
 import { formatDuration, repsModeOf } from '../../src/lib/units';
 import { colors, useScheme } from '../../src/theme';
+import { pageWidth, useDesktop } from '../../src/lib/layout';
 
 export default function History() {
   const scheme = useScheme(); // re-render when the appearance changes
+  const desktop = useDesktop();
   const router = useRouter();
   const { workouts, loading, error, refresh } = useWorkouts();
   const u = useUnits();
@@ -29,7 +31,7 @@ export default function History() {
     setExportNote(null);
     try {
       const bytes = buildXlsx(buildHistorySheets(workouts, u));
-      const outcome = await deliverFile(`fit-lift-history-${isoDay(new Date().toISOString())}.xlsx`, bytes, XLSX_MIME);
+      const outcome = await deliverFile(`fit-log-history-${isoDay(new Date().toISOString())}.xlsx`, bytes, XLSX_MIME);
       if (outcome === 'downloaded') setExportNote('Saved to your downloads.');
     } catch (e) {
       setExportNote(e instanceof Error ? e.message : 'Could not export your history.');
@@ -58,8 +60,8 @@ export default function History() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
-      <Text style={{ fontSize: 30, fontWeight: '800', paddingHorizontal: 16, paddingTop: 8 }}>History</Text>
-      <View style={{ paddingHorizontal: 16, paddingTop: 8, gap: 8 }}>
+      <Text style={{ fontSize: 30, fontWeight: '800', paddingHorizontal: desktop ? 28 : 16, paddingTop: 8, ...pageWidth(desktop) }}>History</Text>
+      <View style={{ paddingHorizontal: desktop ? 28 : 16, paddingTop: 8, gap: 8, ...pageWidth(desktop) }}>
         <StatusBanner />
         <Button
           mode="outlined" icon="microsoft-excel" loading={exporting}
@@ -69,7 +71,7 @@ export default function History() {
         </Button>
         {exportNote && <Text style={{ color: colors.muted, fontSize: 12 }}>{exportNote}</Text>}
       </View>
-      <View style={{ height: 56 }}>
+      <View style={{ height: 56, ...pageWidth(desktop) }}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ padding: 12, gap: 8 }}>
           <Chip selected={filter === null} onPress={() => setFilter(null)}>All</Chip>
           {exerciseList.map(([id, name]) => (
@@ -87,7 +89,7 @@ export default function History() {
         extraData={scheme}
         sections={sections}
         keyExtractor={(w) => w.id}
-        contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 32 }}
+        contentContainerStyle={{ padding: desktop ? 28 : 16, ...pageWidth(desktop), gap: 10, paddingBottom: 32 }}
         refreshControl={<RefreshControl refreshing={false} onRefresh={refresh} tintColor={colors.accent} />}
         stickySectionHeadersEnabled={false}
         renderSectionHeader={({ section }) => (

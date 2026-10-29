@@ -18,6 +18,7 @@ import { formatDuration } from '../src/lib/units';
 import { useDraftStore } from '../src/store/draft';
 import { useElapsedSeconds, useTimerStore } from '../src/store/timer';
 import { colors, getScheme, useScheme } from '../src/theme';
+import { pageWidth, useDesktop } from '../src/lib/layout';
 import type { DraftExercise, Exercise } from '../src/types';
 
 const makeInput = () => ({
@@ -33,6 +34,7 @@ const makeInput = () => ({
 
 export default function ActiveWorkout() {
   useScheme(); // re-render when the appearance changes
+  const desktop = useDesktop();
   const router = useRouter();
   const store = useDraftStore();
   const { draft } = store;
@@ -149,7 +151,7 @@ export default function ActiveWorkout() {
         <Button textColor={colors.danger} onPress={discard}>Discard</Button>
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 220 + bottom }} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={{ padding: desktop ? 28 : 16, ...pageWidth(desktop), gap: 14, paddingBottom: 220 + bottom }} keyboardShouldPersistTaps="handled">
         <StatusBanner />
         {draft.exercises.length === 0 && (
           <Card style={{ alignItems: 'center', gap: 12 }}>
@@ -184,13 +186,15 @@ export default function ActiveWorkout() {
         }}
       >
         {error && <Text style={{ color: colors.danger, textAlign: 'center' }}>{error}</Text>}
+        {/* Desktop: timer and save sit side by side, lined up with the centered workout column. */}
+        <View style={{ gap: 8, ...(desktop ? { flexDirection: 'row', ...pageWidth(true) } : {}) }}>
         <Button
           mode="outlined"
           icon="timer-outline"
           onPress={() => setTimerOpen(true)}
           textColor={timerRunning ? colors.accent : colors.text}
-          contentStyle={{ height: 46 }}
-          style={{ borderRadius: 16, borderColor: timerRunning ? colors.accent : colors.border }}
+          contentStyle={{ height: desktop ? 56 : 46 }}
+          style={{ borderRadius: 16, borderColor: timerRunning ? colors.accent : colors.border, ...(desktop ? { flex: 1 } : {}) }}
           accessibilityLabel="Open timer"
         >
           {timerSeconds > 0 || timerRunning ? `Timer  ${formatDuration(timerSeconds)}` : 'Timer'}
@@ -203,10 +207,11 @@ export default function ActiveWorkout() {
           onPress={finish}
           contentStyle={{ height: 56 }}
           labelStyle={{ fontSize: 17, fontWeight: '800' }}
-          style={{ borderRadius: 16 }}
+          style={{ borderRadius: 16, ...(desktop ? { flex: 2 } : {}) }}
         >
           {draft.editingWorkoutId ? 'Save changes' : 'Finish & save'}
         </Button>
+        </View>
       </View>
 
       <ExercisePicker visible={picker} onClose={() => setPicker(false)} onPick={onPick} />
@@ -286,7 +291,7 @@ function ExerciseCard({ ex, prev }: { ex: DraftExercise; prev: PrevSet[] }) {
               {timed ? (
                 <>
                   <TextInput
-                    style={[input, { minWidth: 64 }]}
+                    style={[input, { minWidth: 48, width: 48, paddingHorizontal: 0 }]}
                     value={s.reps === '' ? '' : String(Math.floor((Number(s.reps) || 0) / 60))}
                     onChangeText={(t) => {
                       const m = t.replace(/[^0-9]/g, '');
@@ -301,7 +306,7 @@ function ExerciseCard({ ex, prev }: { ex: DraftExercise; prev: PrevSet[] }) {
                   />
                   <Text style={{ color: colors.muted, fontSize: 18 }}>:</Text>
                   <TextInput
-                    style={[input, { minWidth: 64 }]}
+                    style={[input, { minWidth: 48, width: 48, paddingHorizontal: 0 }]}
                     value={s.reps === '' ? '' : String((Number(s.reps) || 0) % 60).padStart(2, '0')}
                     onChangeText={(t) => {
                       const sec = t.replace(/[^0-9]/g, '').slice(-3);

@@ -64,7 +64,7 @@ export function buildShareCard(w: WorkoutRow, u: UnitFormat, owner: string): Sha
 /** Plain-text version for messages and social posts. */
 export function buildShareText(card: ShareCardData, link?: string | null): string {
   const lines = [
-    `${card.owner ? `${card.owner}'s` : 'My'} workout on Fit Lift: ${card.title}${card.date ? ` (${card.date})` : ''}`,
+    `${card.owner ? `${card.owner}'s` : 'My'} workout on Fit Log: ${card.title}${card.date ? ` (${card.date})` : ''}`,
     ...card.rows.map((r) => `• ${r.name}: ${r.detail}`),
     card.total,
     'Log Lifts Fast.',

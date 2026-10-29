@@ -43,7 +43,7 @@ export default function SharedWorkoutPage() {
       <ScrollView contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 40, maxWidth: 640, width: '100%', alignSelf: 'center' }}>
         <View style={{ alignItems: 'center', gap: 4, marginTop: 8 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <Text style={{ fontSize: 30, fontWeight: '900' }}>Fit Lift</Text>
+            <Text style={{ fontSize: 30, fontWeight: '900' }}>Fit Log</Text>
             <View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' }}>
               <MaterialCommunityIcons name="dumbbell" size={20} color="#fff" />
             </View>
@@ -101,7 +101,7 @@ export default function SharedWorkoutPage() {
         )}
 
         <Button mode="contained" onPress={() => router.replace('/')} contentStyle={{ height: 50 }} style={{ marginTop: 6 }}>
-          Track your own lifts with Fit Lift
+          Track your own lifts with Fit Log
         </Button>
       </ScrollView>
     </SafeAreaView>

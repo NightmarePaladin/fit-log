@@ -19,7 +19,7 @@ export function ShareCard({ data, viewRef }: { data: ShareCardData; viewRef?: Re
     >
       <View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-          <Text style={{ fontSize: 28, fontWeight: '900', color: c.text }}>Fit Lift</Text>
+          <Text style={{ fontSize: 28, fontWeight: '900', color: c.text }}>Fit Log</Text>
           <View style={{ width: 30, height: 30, borderRadius: 9, backgroundColor: c.accent, alignItems: 'center', justifyContent: 'center' }}>
             <MaterialCommunityIcons name="dumbbell" size={18} color="#fff" />
           </View>

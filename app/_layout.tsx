@@ -9,6 +9,7 @@ import { AuthProvider, useAuth } from '../src/auth/AuthProvider';
 import { SyncGate } from '../src/components/SyncGate';
 import { isSupabaseConfigured } from '../src/lib/supabase';
 import { ThemeSync } from '../src/components/ThemeSync';
+import { SHELL_MAX_WIDTH, useDesktop } from '../src/lib/layout';
 import { colors, makePaperTheme, useScheme } from '../src/theme';
 
 function RootNav() {
@@ -63,6 +64,24 @@ function RootNav() {
   );
 }
 
+/** On a wide desktop window the app sits in a centered column instead of stretching edge to edge. */
+function Shell({ children }: { children: React.ReactNode }) {
+  const desktop = useDesktop();
+  if (!desktop) return <>{children}</>;
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+      <View
+        style={{
+          flex: 1, width: '100%', maxWidth: SHELL_MAX_WIDTH, alignSelf: 'center',
+          borderLeftWidth: 1, borderRightWidth: 1, borderColor: colors.border,
+        }}
+      >
+        {children}
+      </View>
+    </View>
+  );
+}
+
 export default function RootLayout() {
   const scheme = useScheme();
   return (
@@ -72,7 +91,9 @@ export default function RootLayout() {
           <ThemeSync />
           <AuthProvider>
             <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
-            <RootNav />
+            <Shell>
+              <RootNav />
+            </Shell>
             <SyncGate />
           </AuthProvider>
         </PaperProvider>
